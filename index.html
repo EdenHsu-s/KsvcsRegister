@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>高雄高商學生升學報名與檔案上傳系統</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background-color: #f4f6f9; padding-top: 30px; padding-bottom: 30px; }
+    .form-container { max-width: 650px; margin: 0 auto; background: white; padding: 35px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.08); }
+    .section-title { border-left: 4px solid #0d6efd; padding-left: 10px; margin-bottom: 20px; font-weight: bold; color: #333; }
+    .year-badge { background-color: #e7f1ff; color: #0d6efd; padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 0.95rem; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="form-container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h3 class="text-primary fw-bold mb-0">學生升學報名系統</h3>
+      <span class="year-badge" id="academicYearDisplay">載入中...</span>
+    </div>
+    
+    <form id="registrationForm" onsubmit="handleFormSubmit(event)">
+      
+      <!-- 步驟 1: 選擇管道 -->
+      <div class="section-title">一、選擇報名管道</div>
+      <div class="mb-4">
+        <label class="form-label fw-bold">請選擇欲報名的升學管道 <span class="text-danger">*</span></label>
+        <select class="form-select form-select-lg" name="examType" id="examTypeSelect" required disabled>
+          <option value="">-- 正在載入開放中管道... --</option>
+        </select>
+        <div class="form-text text-muted" id="channelNotice">如果無法選擇，代表目前該管道尚未開放報名。</div>
+      </div>
+
+      <!-- 步驟 2: 基本資料 -->
+      <div class="section-title">二、學生基本資料</div>
+      <div class="row g-3 mb-4">
+        <div class="col-md-6">
+          <label class="form-label">班級（如：301）<span class="text-danger">*</span></label>
+          <input type="text" class="form-control" name="studentClass" required placeholder="例如：301">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">座號 <span class="text-danger">*</span></label>
+          <input type="number" class="form-control" name="seatNo" required min="1" max="60">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">學生姓名 <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" name="studentName" required>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">學號 <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" name="studentId" required>
+        </div>
+        <div class="col-12">
+          <label class="form-label">身分證字號（檔案統一依此命名）<span class="text-danger">*</span></label>
+          <input type="text" class="form-control" name="nationalId" required maxlength="10" placeholder="英文字母請大寫">
+        </div>
+      </div>
+
+      <!-- 步驟 3: 上傳檔案 -->
+      <div class="section-title">三、上傳相關檔案</div>
+      <div class="row g-3 mb-4">
+        <div class="col-12">
+          <label class="form-label fw-bold">1. 大頭照電子檔 (必填，限 JPG / PNG) <span class="text-danger">*</span></label>
+          <input type="file" class="form-control" id="photoFile" accept="image/jpeg, image/png" required>
+          <div class="form-text">系統自動儲存檔名為：<code>身分證字號.jpg</code></div>
+        </div>
+
+        <div class="col-12">
+          <label class="form-label fw-bold">2. 報名表/佐證文件 (選填，限 PDF)</label>
+          <input type="file" class="form-control" id="docFile" accept="application/pdf">
+          <div class="form-text">系統自動儲存檔名為：<code>身分證字號_佐證.pdf</code></div>
+        </div>
+      </div>
+
+      <div class="col-12 mt-4">
+        <button type="submit" class="btn btn-primary w-100 btn-lg" id="submitBtn" disabled>確認送出報名</button>
+      </div>
+    </form>
+
+    <div id="statusMessage" class="mt-4"></div>
+  </div>
+</div>
+
+<script>
+  // ------------------------------------------------------------------
+  // 請貼上您在 GAS 部署獲得的網頁應用程式 URL
+  // ------------------------------------------------------------------
+  const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycby0CNwZEKY7GIPm58gX_VLeMbTFThsgdNtCYQmdH2q1j-FRd4dL59lGTfA_i1CFVhWR3Q/exec"; 
+  // ------------------------------------------------------------------
+
+  // 網頁載入時動態向 GAS 請求開放中的管道
+  async function loadOpenChannels() {
+    const selectElem = document.getElementById('examTypeSelect');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    try {
+      const response = await fetch(GAS_WEB_APP_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'getOpenChannels' })
+      });
+      const res = await response.json();
+
+      if (res.status === 'success') {
+        document.getElementById('academicYearDisplay').innerText = res.academicYear;
+        selectElem.innerHTML = '<option value="">-- 請選擇報名管道 --</option>';
+
+        if (res.channels.length === 0) {
+          selectElem.innerHTML = '<option value="">-- 目前暫無開放中的管道 --</option>';
+          document.getElementById('channelNotice').innerText = "提示：目前註冊組尚未開放任何報名管道。";
+          return;
+        }
+
+        res.channels.forEach(ch => {
+          const opt = document.createElement('option');
+          opt.value = ch;
+          opt.innerText = ch;
+          selectElem.appendChild(opt);
+        });
+
+        selectElem.disabled = false;
+        submitBtn.disabled = false;
+      } else {
+        selectElem.innerHTML = '<option value="">-- 載入失敗 --</option>';
+        alert("管道資料載入失敗：" + res.message);
+      }
+    } catch (err) {
+      selectElem.innerHTML = '<option value="">-- 連線失敗 --</option>';
+      alert("無法連線至後端伺服器，請稍後再試。");
+    }
+  }
+
+  loadOpenChannels();
+
+  function readFileAsBase64(file) {
+    return new Promise((resolve, reject) => {
+      if (!file) { resolve(null); return; }
+      const reader = new FileReader();
+      reader.onload = () => resolve({ name: file.name, type: file.type, data: reader.result });
+      reader.onerror = error => reject(error);
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function handleFormSubmit(e) {
+    e.preventDefault();
+    
+    const submitBtn = document.getElementById('submitBtn');
+    const statusMessage = document.getElementById('statusMessage');
+    const photoFile = document.getElementById('photoFile').files[0];
+    const docFile = document.getElementById('docFile').files[0];
+
+    if (photoFile && photoFile.size > 4 * 1024 * 1024) { alert("大頭照檔案過大！請控制在 4MB 以內。"); return; }
+    if (docFile && docFile.size > 10 * 1024 * 1024) { alert("佐證 PDF 檔案過大！請控制在 10MB 以內。"); return; }
+
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '檔案處理與傳輸中，請稍候...';
+    statusMessage.innerHTML = '';
+
+    try {
+      const [photoRes, docRes] = await Promise.all([
+        readFileAsBase64(photoFile),
+        readFileAsBase64(docFile)
+      ]);
+
+      const payload = {
+        action: 'submitForm',
+        examType: document.getElementsByName('examType')[0].value,
+        studentClass: document.getElementsByName('studentClass')[0].value,
+        seatNo: document.getElementsByName('seatNo')[0].value,
+        studentName: document.getElementsByName('studentName')[0].value,
+        studentId: document.getElementsByName('studentId')[0].value,
+        nationalId: document.getElementsByName('nationalId')[0].value,
+        
+        photoName: photoRes ? photoRes.name : '',
+        photoType: photoRes ? photoRes.type : '',
+        photoData: photoRes ? photoRes.data : '',
+        
+        docName: docRes ? docRes.name : '',
+        docType: docRes ? docRes.type : '',
+        docData: docRes ? docRes.data : ''
+      };
+
+      const response = await fetch(GAS_WEB_APP_URL, {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+
+      const result = await response.json();
+
+      if (result.status === "success") {
+        statusMessage.innerHTML = `<div class="alert alert-success fs-5 text-center">${result.message}</div>`;
+        document.getElementById('registrationForm').reset();
+      } else {
+        statusMessage.innerHTML = `<div class="alert alert-danger">${result.message}</div>`;
+      }
+
+    } catch (err) {
+      statusMessage.innerHTML = `<div class="alert alert-danger">傳送失敗，請稍後再試或聯繫註冊組。（錯誤：${err.message || err}）</div>`;
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = '確認送出報名';
+    }
+  }
+</script>
+
+</body>
+</html>
