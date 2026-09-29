@@ -163,7 +163,7 @@
 
   // 切換報名管道時，動態渲染該管道對應的考試欄位
   function handleExamTypeChange(selectElem) {
-    const val = selectElem.value;
+    const val = selectElem.value ? selectElem.value.trim() : "";
     const section = document.getElementById('dynamicExamSection');
     const container = document.getElementById('dynamicFieldsContainer');
 
@@ -175,20 +175,23 @@
 
     section.style.display = 'block';
 
-    if (val.includes('學測')) {
+    // 寬鬆比對：支援「學測」、「學科能力」、「GSAT」等關鍵字
+    if (/學測|學科能力|GSAT/i.test(val)) {
       container.innerHTML = `
-        <label class="form-label fw-bold">學測選考科目 <span class="text-danger">*</span></label>
+        <label class="form-label fw-bold mb-2">學測選考科目 <span class="text-danger">*</span></label>
         <div class="d-flex flex-wrap gap-3">
-          <div class="form-check"><input class="form-check-input gsat-subject" type="checkbox" value="國文" id="gsat1"><label class="form-check-label" for="gsat1">國文</label></div>
-          <div class="form-check"><input class="form-check-input gsat-subject" type="checkbox" value="英文" id="gsat2"><label class="form-check-label" for="gsat2">英文</label></div>
-          <div class="form-check"><input class="form-check-input gsat-subject" type="checkbox" value="數學A" id="gsat3"><label class="form-check-label" for="gsat3">數學A</label></div>
-          <div class="form-check"><input class="form-check-input gsat-subject" type="checkbox" value="數學B" id="gsat4"><label class="form-check-label" for="gsat4">數學B</label></div>
-          <div class="form-check"><input class="form-check-input gsat-subject" type="checkbox" value="自然" id="gsat5"><label class="form-check-label" for="gsat5">自然</label></div>
-          <div class="form-check"><input class="form-check-input gsat-subject" type="checkbox" value="社會" id="gsat6"><label class="form-check-label" for="gsat6">社會</label></div>
+          <div class="form-check me-2"><input class="form-check-input gsat-subject" type="checkbox" value="國文" id="gsat1"><label class="form-check-label fw-bold" for="gsat1">國文</label></div>
+          <div class="form-check me-2"><input class="form-check-input gsat-subject" type="checkbox" value="英文" id="gsat2"><label class="form-check-label fw-bold" for="gsat2">英文</label></div>
+          <div class="form-check me-2"><input class="form-check-input gsat-subject" type="checkbox" value="數學A" id="gsat3"><label class="form-check-label fw-bold" for="gsat3">數學A</label></div>
+          <div class="form-check me-2"><input class="form-check-input gsat-subject" type="checkbox" value="數學B" id="gsat4"><label class="form-check-label fw-bold" for="gsat4">數學B</label></div>
+          <div class="form-check me-2"><input class="form-check-input gsat-subject" type="checkbox" value="自然" id="gsat5"><label class="form-check-label fw-bold" for="gsat5">自然</label></div>
+          <div class="form-check me-2"><input class="form-check-input gsat-subject" type="checkbox" value="社會" id="gsat6"><label class="form-check-label fw-bold" for="gsat6">社會</label></div>
         </div>
-        <div class="form-text text-muted mt-1">請勾選本次欲報考之學測科目（可複選）。</div>
+        <div class="form-text text-muted mt-2">請勾選本次欲報考之學測科目（可複選）。</div>
       `;
-    } else if (val.includes('統測')) {
+    } 
+    // 寬鬆比對：支援「統測」、「四技二專」、「統一入學」、「TVE」等關鍵字
+    else if (/統測|四技二專|統一入學|TVE/i.test(val)) {
       container.innerHTML = `
         <div class="row g-3">
           <div class="col-md-6">
@@ -234,20 +237,24 @@
           </div>
         </div>
       `;
-    } else if (val.includes('分科')) {
+    } 
+    // 寬鬆比對：支援「分科」、「指定科目」、「指考」、「AST」等關鍵字
+    else if (/分科|指定科目|指考|AST/i.test(val)) {
       container.innerHTML = `
-        <label class="form-label fw-bold">分科測驗選考科目 <span class="text-danger">*</span></label>
+        <label class="form-label fw-bold mb-2">分科測驗選考科目 <span class="text-danger">*</span></label>
         <div class="d-flex flex-wrap gap-3">
-          <div class="form-check"><input class="form-check-input ast-subject" type="checkbox" value="數甲" id="ast1"><label class="form-check-label" for="ast1">數甲</label></div>
-          <div class="form-check"><input class="form-check-input ast-subject" type="checkbox" value="物理" id="ast2"><label class="form-check-label" for="ast2">物理</label></div>
-          <div class="form-check"><input class="form-check-input ast-subject" type="checkbox" value="化學" id="ast3"><label class="form-check-label" for="ast3">化學</label></div>
-          <div class="form-check"><input class="form-check-input ast-subject" type="checkbox" value="生物" id="ast4"><label class="form-check-label" for="ast4">生物</label></div>
-          <div class="form-check"><input class="form-check-input ast-subject" type="checkbox" value="歷史" id="ast5"><label class="form-check-label" for="ast5">歷史</label></div>
-          <div class="form-check"><input class="form-check-input ast-subject" type="checkbox" value="地理" id="ast6"><label class="form-check-label" for="ast6">地理</label></div>
-          <div class="form-check"><input class="form-check-input ast-subject" type="checkbox" value="公民與社會" id="ast7"><label class="form-check-label" for="ast7">公民與社會</label></div>
+          <div class="form-check me-2"><input class="form-check-input ast-subject" type="checkbox" value="數甲" id="ast1"><label class="form-check-label fw-bold" for="ast1">數甲</label></div>
+          <div class="form-check me-2"><input class="form-check-input ast-subject" type="checkbox" value="物理" id="ast2"><label class="form-check-label fw-bold" for="ast2">物理</label></div>
+          <div class="form-check me-2"><input class="form-check-input ast-subject" type="checkbox" value="化學" id="ast3"><label class="form-check-label fw-bold" for="ast3">化學</label></div>
+          <div class="form-check me-2"><input class="form-check-input ast-subject" type="checkbox" value="生物" id="ast4"><label class="form-check-label fw-bold" for="ast4">生物</label></div>
+          <div class="form-check me-2"><input class="form-check-input ast-subject" type="checkbox" value="歷史" id="ast5"><label class="form-check-label fw-bold" for="ast5">歷史</label></div>
+          <div class="form-check me-2"><input class="form-check-input ast-subject" type="checkbox" value="地理" id="ast6"><label class="form-check-label fw-bold" for="ast6">地理</label></div>
+          <div class="form-check me-2"><input class="form-check-input ast-subject" type="checkbox" value="公民與社會" id="ast7"><label class="form-check-label fw-bold" for="ast7">公民與社會</label></div>
         </div>
       `;
-    } else {
+    } 
+    // 其他一般管道
+    else {
       container.innerHTML = `
         <div class="mb-2">
           <label class="form-label fw-bold">備註或特別說明事項 (選填)</label>
@@ -322,14 +329,14 @@
     // 收集動態考試細項資料
     let examDetails = {};
 
-    if (examType.includes('學測')) {
+    if (/學測|學科能力|GSAT/i.test(examType)) {
       const selected = Array.from(document.querySelectorAll('.gsat-subject:checked')).map(el => el.value);
       if (selected.length === 0) {
         alert("請至少選擇一門【學測】選考科目！");
         return;
       }
       examDetails.subjects = selected.join('、');
-    } else if (examType.includes('統測')) {
+    } else if (/統測|四技二專|統一入學|TVE/i.test(examType)) {
       const cluster = document.getElementById('tveCluster').value;
       const math = document.getElementById('tveMath').value;
       if (!cluster || !math) {
@@ -339,7 +346,7 @@
       examDetails.tveCluster = cluster;
       examDetails.tveMath = math;
       examDetails.tveSubjects = document.getElementById('tveSubjects').value;
-    } else if (examType.includes('分科')) {
+    } else if (/分科|指定科目|指考|AST/i.test(examType)) {
       const selected = Array.from(document.querySelectorAll('.ast-subject:checked')).map(el => el.value);
       if (selected.length === 0) {
         alert("請至少選擇一門【分科測驗】選考科目！");
@@ -366,7 +373,7 @@
       const payload = {
         action: 'submitForm',
         examType: examType,
-        examDetails: examDetails, // 動態考試資料
+        examDetails: examDetails,
         
         // 1~12 基本資料
         studentClass: document.getElementsByName('studentClass')[0].value,
