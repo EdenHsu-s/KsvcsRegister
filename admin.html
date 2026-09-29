@@ -3,6 +3,327 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>高雄高商升學報名 - 後台管理控制台</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background-color: #1e2227; color: #f8f9fa; padding-top: 40px; padding-bottom: 50px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+    .admin-card { max-width: 800px; margin: 0 auto; background: #2b3036; padding: 35px; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); border: 1px solid #3d444d; }
+    .channel-row { background-color: #343a40; padding: 14px 20px; border-radius: 10px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid #6c757d; transition: all 0.2s; }
+    .channel-row.active-row { border-left-color: #198754; background-color: #2c3830; }
+    .form-switch .form-check-input { width: 3.2em; height: 1.6em; cursor: pointer; }
+    .active-year-badge { background-color: #ffc107; color: #000; font-weight: bold; padding: 4px 10px; border-radius: 12px; font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="admin-card">
+    
+    <!-- 1. 登入區域 -->
+    <div id="loginSection">
+      <h3 class="text-center text-warning fw-bold mb-4">註冊組長後台管理登入</h3>
+      <div class="mb-3">
+        <label class="form-label">請輸入管理密碼：</label>
+        <input type="password" class="form-control form-control-lg bg-dark text-light border-secondary" id="adminPassword" placeholder="請輸入 Code.gs 設定之密碼" onkeypress="if(event.key==='Enter') adminLogin()">
+      </div>
+      <button class="btn btn-warning w-100 btn-lg fw-bold" onclick="adminLogin()">登入控制台</button>
+      <div id="loginMsg" class="mt-3"></div>
+    </div>
+
+    <!-- 2. 控制台主頁面 (登入成功後顯示) -->
+    <div id="controlPanel" style="display: none;">
+      
+      <!-- 頂部頁籤與安全登出 -->
+      <div class="d-flex justify-content-between align-items-center mb-4 border-bottom border-secondary pb-3">
+        <div>
+          <h3 class="text-warning fw-bold mb-1">升學管道開放管理</h3>
+          <span class="text-muted small">前台目前開放學年度：<span id="currentActiveYearBadge" class="active-year-badge">讀取中...</span></span>
+        </div>
+        <button class="btn btn-outline-light btn-sm" onclick="location.reload()">安全登出</button>
+      </div>
+
+      <!-- 學年度切換與設定 -->
+      <div class="card bg-dark border-secondary p-3 mb-4">
+        <div class="row g-3 align-items-center">
+          <div class="col-md-auto">
+            <label class="col-form-label fw-bold">切換管理學年度：</label>
+          </div>
+          <div class="col-md-auto">
+            <select class="form-select form-select-lg bg-dark text-light border-secondary" id="yearSelect" onchange="fetchYearConfig()">
+              <!-- 動態產生學年度選單 -->
+            </select>
+          </div>
+          <div class="col-md-auto">
+            <button class="btn btn-warning fw-bold" onclick="setAsActiveYear()">⭐ 將此學年度設為前台開放</button>
+          </div>
+          <div class="col-md-auto ms-auto">
+            <button class="btn btn-outline-info btn-sm" onclick="addNewYearPrompt()">+ 增加新學年度</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 管道設定列表 -->
+      <div class="mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="fw-bold text-info mb-0">【<span id="editingYearTitle">--</span>】管道開放狀態：</h5>
+          <button class="btn btn-sm btn-outline-success" onclick="addCustomChannelPrompt()">+ 新增自訂管道</button>
+        </div>
+        
+        <div id="channelsContainer">
+          <!-- 動態載入 Switch 開關列表 -->
+        </div>
+      </div>
+
+      <!-- 儲存發布按鈕 -->
+      <button class="btn btn-success btn-lg w-100 fw-bold shadow" id="saveBtn" onclick="saveConfig()">儲存並發布此學年度設定</button>
+      <div id="statusMsg" class="mt-3"></div>
+
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // ==================================================================
+  // 【重要設定區】請貼上您在 Apps Script 部署獲得的網頁應用程式 URL
+  // ==================================================================
+  const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycby0CNwZEKY7GIPm58gX_VLeMbTFThsgdNtCYQmdH2q1j-FRd4dL59lGTfA_i1CFVhWR3Q/exec"; 
+  // ==================================================================
+
+  let currentPassword = "";
+  let currentChannelsData = [];
+  let globalActiveYear = "";
+
+  // 自動初始化學年度選單 (選取範圍：當年前一年 ~ 未來兩年)
+  function initYearDropdown(selectedTargetYear) {
+    const yearSelect = document.getElementById('yearSelect');
+    const today = new Date();
+    let currYear = today.getFullYear() - 1911;
+    if (today.getMonth() + 1 < 8) { currYear -= 1; }
+
+    yearSelect.innerHTML = '';
+    const startYear = currYear - 1;
+    const endYear = currYear + 3;
+
+    for (let y = startYear; y <= endYear; y++) {
+      const yearStr = y + "學年度";
+      const opt = document.createElement('option');
+      opt.value = yearStr;
+      opt.innerText = yearStr;
+      if (selectedTargetYear && yearStr === selectedTargetYear) {
+        opt.selected = true;
+      } else if (!selectedTargetYear && y === currYear) {
+        opt.selected = true;
+      }
+      yearSelect.appendChild(opt);
+    }
+  }
+
+  // 管理員登入驗證
+  async function adminLogin() {
+    const pwdInput = document.getElementById('adminPassword');
+    const loginMsg = document.getElementById('loginMsg');
+    currentPassword = pwdInput.value.trim();
+
+    if (!currentPassword) { alert("請輸入後台管理密碼！"); return; }
+
+    loginMsg.innerHTML = '<div class="text-info">正在連線驗證身分...</div>';
+
+    initYearDropdown();
+    await fetchYearConfig();
+  }
+
+  // 取得選定學年度的管道設定資料
+  async function fetchYearConfig() {
+    const selectedYear = document.getElementById('yearSelect').value;
+    const loginMsg = document.getElementById('loginMsg');
+    const statusMsg = document.getElementById('statusMsg');
+
+    document.getElementById('editingYearTitle').innerText = selectedYear;
+    if (statusMsg) statusMsg.innerHTML = '';
+
+    try {
+      const response = await fetch(GAS_WEB_APP_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'getAdminConfig',
+          password: currentPassword,
+          academicYear: selectedYear
+        })
+      });
+
+      const res = await response.json();
+
+      if (res.status === 'success') {
+        document.getElementById('loginSection').style.display = 'none';
+        document.getElementById('controlPanel').style.display = 'block';
+        loginMsg.innerHTML = '';
+        
+        globalActiveYear = res.activeYear;
+        document.getElementById('currentActiveYearBadge').innerText = globalActiveYear;
+
+        currentChannelsData = res.channels;
+        renderChannelsList();
+      } else {
+        loginMsg.innerHTML = `<div class="alert alert-danger">${res.message}</div>`;
+      }
+    } catch (err) {
+      loginMsg.innerHTML = `<div class="alert alert-danger">連線失敗：${err.message || err}</div>`;
+    }
+  }
+
+  // 渲染管道開關 Switch 列表
+  function renderChannelsList() {
+    const container = document.getElementById('channelsContainer');
+    container.innerHTML = '';
+
+    if (currentChannelsData.length === 0) {
+      container.innerHTML = '<div class="text-muted text-center py-3">目前尚無任何管道，點擊右上角「+ 新增自訂管道」建立。</div>';
+      return;
+    }
+
+    currentChannelsData.forEach((ch, idx) => {
+      const row = document.createElement('div');
+      row.className = `channel-row ${ch.enabled ? 'active-row' : ''}`;
+      row.innerHTML = `
+        <span class="fs-5 fw-bold">${ch.name}</span>
+        <div class="form-check form-switch d-flex align-items-center">
+          <input class="form-check-input me-3" type="checkbox" id="switch_${idx}" ${ch.enabled ? 'checked' : ''} onchange="toggleChannel(${idx}, this.checked)">
+          <label class="form-check-label fw-bold" for="switch_${idx}" style="min-width: 60px;">
+            ${ch.enabled ? '<span class="text-success">開放中</span>' : '<span class="text-muted">已關閉</span>'}
+          </label>
+        </div>
+      `;
+      container.appendChild(row);
+    });
+  }
+
+  // 切換 Switch 開關狀態
+  function toggleChannel(idx, isChecked) {
+    currentChannelsData[idx].enabled = isChecked;
+    renderChannelsList();
+  }
+
+  // 將選定的學年度指定為前台開放學年度
+  async function setAsActiveYear() {
+    const selectedYear = document.getElementById('yearSelect').value;
+    if (!confirm(`確定要將【${selectedYear}】設定為前台學生目前填報的學年度嗎？\n（前台網頁將全面切換至此學年度）`)) return;
+
+    const statusMsg = document.getElementById('statusMsg');
+    statusMsg.innerHTML = '<div class="text-info">正在更新前台學年度設定...</div>';
+
+    try {
+      const response = await fetch(GAS_WEB_APP_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'setActiveYear',
+          password: currentPassword,
+          academicYear: selectedYear
+        })
+      });
+
+      const res = await response.json();
+
+      if (res.status === 'success') {
+        globalActiveYear = selectedYear;
+        document.getElementById('currentActiveYearBadge').innerText = globalActiveYear;
+        statusMsg.innerHTML = `<div class="alert alert-success fs-6 text-center">${res.message}</div>`;
+      } else {
+        statusMsg.innerHTML = `<div class="alert alert-danger">${res.message}</div>`;
+      }
+    } catch (err) {
+      statusMsg.innerHTML = `<div class="alert alert-danger">設定失敗：${err.message || err}</div>`;
+    }
+  }
+
+  // 新增自訂管道
+  function addCustomChannelPrompt() {
+    const newName = prompt("請輸入欲新增的升學管道名稱（例如：校內繁星推薦、特殊選才二階段）：");
+    if (newName && newName.trim()) {
+      const name = newName.trim();
+      if (currentChannelsData.some(c => c.name === name)) {
+        alert("該管道名稱已存在！");
+        return;
+      }
+      currentChannelsData.push({ name: name, enabled: true });
+      renderChannelsList();
+    }
+  }
+
+  // 新增選單外的學年度
+  function addNewYearPrompt() {
+    const yearNum = prompt("請輸入欲新增的民國學年度數字（例如：116）：");
+    if (yearNum && !isNaN(yearNum.trim())) {
+      const newYearText = yearNum.trim() + "學年度";
+      const yearSelect = document.getElementById('yearSelect');
+      
+      let exists = false;
+      for (let i = 0; i < yearSelect.options.length; i++) {
+        if (yearSelect.options[i].value === newYearText) {
+          exists = true;
+          yearSelect.options[i].selected = true;
+          break;
+        }
+      }
+
+      if (!exists) {
+        const opt = document.createElement('option');
+        opt.value = newYearText;
+        opt.innerText = newYearText;
+        opt.selected = true;
+        yearSelect.appendChild(opt);
+      }
+
+      fetchYearConfig();
+    }
+  }
+
+  // 儲存設定至 Google 雲端
+  async function saveConfig() {
+    const saveBtn = document.getElementById('saveBtn');
+    const statusMsg = document.getElementById('statusMsg');
+    const selectedYear = document.getElementById('yearSelect').value;
+
+    saveBtn.disabled = true;
+    saveBtn.innerText = '設定儲存中...';
+    statusMsg.innerHTML = '';
+
+    try {
+      const response = await fetch(GAS_WEB_APP_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'saveAdminConfig',
+          password: currentPassword,
+          academicYear: selectedYear,
+          channels: currentChannelsData
+        })
+      });
+
+      const res = await response.json();
+
+      if (res.status === 'success') {
+        statusMsg.innerHTML = `<div class="alert alert-success fs-5 text-center">${res.message}</div>`;
+      } else {
+        statusMsg.innerHTML = `<div class="alert alert-danger">${res.message}</div>`;
+      }
+    } catch (err) {
+      statusMsg.innerHTML = `<div class="alert alert-danger">儲存失敗：${err.message || err}</div>`;
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.innerText = '儲存並發布此學年度設定';
+    }
+  }
+</script>
+
+</body>
+</html>
+
+
+<template><!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>高雄高商註冊組升學報名 - 後台管理控制台</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
@@ -235,3 +556,4 @@
 
 </body>
 </html>
+</template>
