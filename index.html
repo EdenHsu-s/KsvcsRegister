@@ -42,7 +42,7 @@
         </div>
         <div class="col-md-6">
           <label class="form-label">座號 <span class="text-danger">*</span></label>
-          <input type="number" class="form-control" name="seatNo" required min="1" max="60">
+          <input type="text" class="form-control" name="seatNo" id="seatNoInput" required placeholder="例如:01" maxlength="2" onblur="formatSeatNo(this)">
         </div>
         <div class="col-md-6">
           <label class="form-label">學生姓名 <span class="text-danger">*</span></label>
@@ -142,7 +142,13 @@
       reader.readAsDataURL(file);
     });
   }
-
+  // 座號自動補零函式 (離焦時自動將 1 轉為 01)
+  function formatSeatNo(input) {
+    let val = input.value.trim();
+    if (val && !isNaN(val)) {
+      input.value = val.padStart(2, '0');
+    }
+  }
   async function handleFormSubmit(e) {
     e.preventDefault();
     
