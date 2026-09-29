@@ -7,10 +7,11 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
     body { background-color: #f4f6f9; padding-top: 30px; padding-bottom: 40px; }
-    .form-container { max-width: 750px; margin: 0 auto; background: white; padding: 35px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.08); }
+    .form-container { max-width: 780px; margin: 0 auto; background: white; padding: 35px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.08); }
     .section-title { border-left: 4px solid #0d6efd; padding-left: 10px; margin-bottom: 20px; font-weight: bold; color: #333; }
     .year-badge { background-color: #e7f1ff; color: #0d6efd; padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 0.95rem; }
     .field-num { background-color: #0d6efd; color: white; border-radius: 50%; width: 22px; height: 22px; display: inline-flex; justify-content: center; align-items: center; font-size: 0.75rem; margin-right: 5px; }
+    .exam-box { background-color: #f8f9fa; border: 1px dashed #0d6efd; border-radius: 8px; padding: 20px; }
   </style>
 </head>
 <body>
@@ -28,14 +29,22 @@
       <div class="section-title">一、選擇報名管道</div>
       <div class="mb-4">
         <label class="form-label fw-bold">請選擇欲報名的升學管道 <span class="text-danger">*</span></label>
-        <select class="form-select form-select-lg" name="examType" id="examTypeSelect" required disabled>
+        <select class="form-select form-select-lg" name="examType" id="examTypeSelect" onchange="handleExamTypeChange(this)" required disabled>
           <option value="">-- 正在載入開放中管道... --</option>
         </select>
         <div class="form-text text-muted" id="channelNotice">如果無法選擇，代表目前該管道尚未開放報名。</div>
       </div>
 
-      <!-- 報名基本資料 (依指定 1~12 順序) -->
-      <div class="section-title">二、學生基本資料</div>
+      <!-- 動態考試科目區域 -->
+      <div id="dynamicExamSection" class="mb-4" style="display:none;">
+        <div class="section-title">二、考試科目與管道細項</div>
+        <div class="exam-box" id="dynamicFieldsContainer">
+          <!-- 這裡將由 JavaScript 動態插入欄位 -->
+        </div>
+      </div>
+
+      <!-- 報名基本資料 (1~12 順序) -->
+      <div class="section-title">三、學生基本資料</div>
       <div class="row g-3 mb-4">
         
         <!-- 1. 班級 -->
@@ -116,13 +125,13 @@
 
       </div>
 
-      <!-- 上傳檔案 -->
-      <div class="section-title">三、上傳相關檔案</div>
+      <!-- 上傳大頭照 -->
+      <div class="section-title">四、上傳相片檔</div>
       <div class="row g-3 mb-4">
         <div class="col-12">
-          <label class="form-label fw-bold">1. 大頭照電子檔 (必填，限 JPG / PNG) <span class="text-danger">*</span></label>
+          <label class="form-label fw-bold">大頭照電子檔 (必填，限 JPG / PNG) <span class="text-danger">*</span></label>
           <input type="file" class="form-control" id="photoFile" accept="image/jpeg, image/png" required>
-          <div class="form-text">系統自動儲存檔名為：<code>身分證字號.jpg</code></div>
+          <div class="form-text">系統將自動另存檔名為：<code>身分證字號.jpg</code></div>
         </div>
       </div>
 
@@ -142,23 +151,113 @@
   const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycby0CNwZEKY7GIPm58gX_VLeMbTFThsgdNtCYQmdH2q1j-FRd4dL59lGTfA_i1CFVhWR3Q/exec"; 
   // ==================================================================
 
-  // 1. 座號自動補 0 函式 (例如：1 -> 01)
   function formatSeatNo(input) {
     let val = input.value.trim();
-    if (val && !isNaN(val)) {
-      input.value = val.padStart(2, '0');
-    }
+    if (val && !isNaN(val)) { input.value = val.padStart(2, '0'); }
   }
 
-  // 2. 郵遞區號自動補 0 函式 (例如：50 -> 050)
   function formatZipCode(input) {
     let val = input.value.trim();
-    if (val && !isNaN(val)) {
-      input.value = val.padStart(3, '0');
+    if (val && !isNaN(val)) { input.value = val.padStart(3, '0'); }
+  }
+
+  // 切換報名管道時，動態渲染該管道對應的考試欄位
+  function handleExamTypeChange(selectElem) {
+    const val = selectElem.value;
+    const section = document.getElementById('dynamicExamSection');
+    const container = document.getElementById('dynamicFieldsContainer');
+
+    if (!val) {
+      section.style.display = 'none';
+      container.innerHTML = '';
+      return;
+    }
+
+    section.style.display = 'block';
+
+    if (val.includes('學測')) {
+      container.innerHTML = `
+        <label class="form-label fw-bold">學測選考科目 <span class="text-danger">*</span></label>
+        <div class="d-flex flex-wrap gap-3">
+          <div class="form-check"><input class="form-check-input gsat-subject" type="checkbox" value="國文" id="gsat1"><label class="form-check-label" for="gsat1">國文</label></div>
+          <div class="form-check"><input class="form-check-input gsat-subject" type="checkbox" value="英文" id="gsat2"><label class="form-check-label" for="gsat2">英文</label></div>
+          <div class="form-check"><input class="form-check-input gsat-subject" type="checkbox" value="數學A" id="gsat3"><label class="form-check-label" for="gsat3">數學A</label></div>
+          <div class="form-check"><input class="form-check-input gsat-subject" type="checkbox" value="數學B" id="gsat4"><label class="form-check-label" for="gsat4">數學B</label></div>
+          <div class="form-check"><input class="form-check-input gsat-subject" type="checkbox" value="自然" id="gsat5"><label class="form-check-label" for="gsat5">自然</label></div>
+          <div class="form-check"><input class="form-check-input gsat-subject" type="checkbox" value="社會" id="gsat6"><label class="form-check-label" for="gsat6">社會</label></div>
+        </div>
+        <div class="form-text text-muted mt-1">請勾選本次欲報考之學測科目（可複選）。</div>
+      `;
+    } else if (val.includes('統測')) {
+      container.innerHTML = `
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-bold">報考群類 <span class="text-danger">*</span></label>
+            <select class="form-select" id="tveCluster" required>
+              <option value="">-- 請選擇統測群類 --</option>
+              <option value="01 機械群">01 機械群</option>
+              <option value="02 動力機械群">02 動力機械群</option>
+              <option value="03 電機與電子群電機類">03 電機與電子群電機類</option>
+              <option value="04 電機與電子群資電類">04 電機與電子群資電類</option>
+              <option value="05 化工群">05 化工群</option>
+              <option value="06 土木與建築群">06 土木與建築群</option>
+              <option value="07 設計群">07 設計群</option>
+              <option value="08 工程與管理類">08 工程與管理類</option>
+              <option value="09 食品群">09 食品群</option>
+              <option value="10 家政群幼保類">10 家政群幼保類</option>
+              <option value="11 家政群生活應用類">11 家政群生活應用類</option>
+              <option value="12 農業群">12 農業群</option>
+              <option value="13 外語群英語類">13 外語群英語類</option>
+              <option value="14 外語群日語類">14 外語群日語類</option>
+              <option value="15 餐旅群">15 餐旅群</option>
+              <option value="16 海事群">16 海事群</option>
+              <option value="17 水產群">17 水產群</option>
+              <option value="18 藝術群影視類">18 藝術群影視類</option>
+              <option value="19 商管外語群(商管類)">19 商管外語群(商管類)</option>
+              <option value="20 跨群/其他">20 跨群/其他</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-bold">統測數學考卷類別 <span class="text-danger">*</span></label>
+            <select class="form-select" id="tveMath" required>
+              <option value="">-- 請選擇數學類別 --</option>
+              <option value="數學(A)">數學(A) - 家政/幼保/藝術</option>
+              <option value="數學(B)">數學(B) - 商管/餐旅/外語</option>
+              <option value="數學(C)">數學(C) - 工業/農機/自然</option>
+              <option value="數學(S)">數學(S) - 特殊類別</option>
+              <option value="不考數學">不考數學</option>
+            </select>
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-bold">共同與專業考科說明</label>
+            <input type="text" class="form-control" id="tveSubjects" value="國文、英文、專業科目(一)、專業科目(二)" readonly>
+          </div>
+        </div>
+      `;
+    } else if (val.includes('分科')) {
+      container.innerHTML = `
+        <label class="form-label fw-bold">分科測驗選考科目 <span class="text-danger">*</span></label>
+        <div class="d-flex flex-wrap gap-3">
+          <div class="form-check"><input class="form-check-input ast-subject" type="checkbox" value="數甲" id="ast1"><label class="form-check-label" for="ast1">數甲</label></div>
+          <div class="form-check"><input class="form-check-input ast-subject" type="checkbox" value="物理" id="ast2"><label class="form-check-label" for="ast2">物理</label></div>
+          <div class="form-check"><input class="form-check-input ast-subject" type="checkbox" value="化學" id="ast3"><label class="form-check-label" for="ast3">化學</label></div>
+          <div class="form-check"><input class="form-check-input ast-subject" type="checkbox" value="生物" id="ast4"><label class="form-check-label" for="ast4">生物</label></div>
+          <div class="form-check"><input class="form-check-input ast-subject" type="checkbox" value="歷史" id="ast5"><label class="form-check-label" for="ast5">歷史</label></div>
+          <div class="form-check"><input class="form-check-input ast-subject" type="checkbox" value="地理" id="ast6"><label class="form-check-label" for="ast6">地理</label></div>
+          <div class="form-check"><input class="form-check-input ast-subject" type="checkbox" value="公民與社會" id="ast7"><label class="form-check-label" for="ast7">公民與社會</label></div>
+        </div>
+      `;
+    } else {
+      container.innerHTML = `
+        <div class="mb-2">
+          <label class="form-label fw-bold">備註或特別說明事項 (選填)</label>
+          <input type="text" class="form-control" id="customNote" placeholder="如有特殊選報需求請在此填寫">
+        </div>
+      `;
     }
   }
 
-  // 動態讀取目前開放的管道
+  // 動態載入開放中的管道
   async function loadOpenChannels() {
     const selectElem = document.getElementById('examTypeSelect');
     const submitBtn = document.getElementById('submitBtn');
@@ -211,32 +310,65 @@
     });
   }
 
+  // 送出表單資料
   async function handleFormSubmit(e) {
     e.preventDefault();
     
     const submitBtn = document.getElementById('submitBtn');
     const statusMessage = document.getElementById('statusMessage');
+    const examType = document.getElementsByName('examType')[0].value;
     const photoFile = document.getElementById('photoFile').files[0];
-    const docFile = document.getElementById('docFile').files[0];
 
-    if (photoFile && photoFile.size > 4 * 1024 * 1024) { alert("大頭照檔案過大！請控制在 4MB 以內。"); return; }
-    if (docFile && docFile.size > 10 * 1024 * 1024) { alert("佐證 PDF 檔案過大！請控制在 10MB 以內。"); return; }
+    // 收集動態考試細項資料
+    let examDetails = {};
+
+    if (examType.includes('學測')) {
+      const selected = Array.from(document.querySelectorAll('.gsat-subject:checked')).map(el => el.value);
+      if (selected.length === 0) {
+        alert("請至少選擇一門【學測】選考科目！");
+        return;
+      }
+      examDetails.subjects = selected.join('、');
+    } else if (examType.includes('統測')) {
+      const cluster = document.getElementById('tveCluster').value;
+      const math = document.getElementById('tveMath').value;
+      if (!cluster || !math) {
+        alert("請完整選擇統測的【報考群類】與【數學類別】！");
+        return;
+      }
+      examDetails.tveCluster = cluster;
+      examDetails.tveMath = math;
+      examDetails.tveSubjects = document.getElementById('tveSubjects').value;
+    } else if (examType.includes('分科')) {
+      const selected = Array.from(document.querySelectorAll('.ast-subject:checked')).map(el => el.value);
+      if (selected.length === 0) {
+        alert("請至少選擇一門【分科測驗】選考科目！");
+        return;
+      }
+      examDetails.subjects = selected.join('、');
+    } else {
+      const noteElem = document.getElementById('customNote');
+      examDetails.customNote = noteElem ? noteElem.value : '';
+    }
+
+    if (photoFile && photoFile.size > 4 * 1024 * 1024) { 
+      alert("大頭照檔案過大！請控制在 4MB 以內。"); 
+      return; 
+    }
 
     submitBtn.disabled = true;
-    submitBtn.innerHTML = '檔案上傳與資料傳輸中，請稍候...';
+    submitBtn.innerHTML = '照片上傳與資料傳輸中，請稍候...';
     statusMessage.innerHTML = '';
 
     try {
-      const [photoRes, docRes] = await Promise.all([
-        readFileAsBase64(photoFile),
-        readFileAsBase64(docFile)
-      ]);
+      const photoRes = await readFileAsBase64(photoFile);
 
       const payload = {
         action: 'submitForm',
-        examType: document.getElementsByName('examType')[0].value,
+        examType: examType,
+        examDetails: examDetails, // 動態考試資料
         
-        // 依 1~12 項欄位傳送
+        // 1~12 基本資料
         studentClass: document.getElementsByName('studentClass')[0].value,
         seatNo: document.getElementsByName('seatNo')[0].value,
         studentName: document.getElementsByName('studentName')[0].value,
@@ -250,14 +382,10 @@
         emergencyContact: document.getElementsByName('emergencyContact')[0].value,
         emergencyPhone: document.getElementsByName('emergencyPhone')[0].value,
         
-        // 檔案資料
+        // 相片檔案
         photoName: photoRes ? photoRes.name : '',
         photoType: photoRes ? photoRes.type : '',
-        photoData: photoRes ? photoRes.data : '',
-        
-        docName: docRes ? docRes.name : '',
-        docType: docRes ? docRes.type : '',
-        docData: docRes ? docRes.data : ''
+        photoData: photoRes ? photoRes.data : ''
       };
 
       const response = await fetch(GAS_WEB_APP_URL, {
@@ -270,6 +398,7 @@
       if (result.status === "success") {
         statusMessage.innerHTML = `<div class="alert alert-success fs-5 text-center">${result.message}</div>`;
         document.getElementById('registrationForm').reset();
+        document.getElementById('dynamicExamSection').style.display = 'none';
       } else {
         statusMessage.innerHTML = `<div class="alert alert-danger">${result.message}</div>`;
       }
