@@ -6,10 +6,11 @@
   <title>高雄高商學生升學報名與檔案上傳系統</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
-    body { background-color: #f4f6f9; padding-top: 30px; padding-bottom: 30px; }
-    .form-container { max-width: 650px; margin: 0 auto; background: white; padding: 35px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.08); }
+    body { background-color: #f4f6f9; padding-top: 30px; padding-bottom: 40px; }
+    .form-container { max-width: 750px; margin: 0 auto; background: white; padding: 35px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.08); }
     .section-title { border-left: 4px solid #0d6efd; padding-left: 10px; margin-bottom: 20px; font-weight: bold; color: #333; }
     .year-badge { background-color: #e7f1ff; color: #0d6efd; padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 0.95rem; }
+    .field-num { background-color: #0d6efd; color: white; border-radius: 50%; width: 22px; height: 22px; display: inline-flex; justify-content: center; align-items: center; font-size: 0.75rem; margin-right: 5px; }
   </style>
 </head>
 <body>
@@ -23,7 +24,7 @@
     
     <form id="registrationForm" onsubmit="handleFormSubmit(event)">
       
-      <!-- 步驟 1: 選擇管道 -->
+      <!-- 選擇管道 -->
       <div class="section-title">一、選擇報名管道</div>
       <div class="mb-4">
         <label class="form-label fw-bold">請選擇欲報名的升學管道 <span class="text-danger">*</span></label>
@@ -33,32 +34,89 @@
         <div class="form-text text-muted" id="channelNotice">如果無法選擇，代表目前該管道尚未開放報名。</div>
       </div>
 
-      <!-- 步驟 2: 基本資料 -->
+      <!-- 報名基本資料 (依指定 1~12 順序) -->
       <div class="section-title">二、學生基本資料</div>
       <div class="row g-3 mb-4">
-        <div class="col-md-6">
-          <label class="form-label">班級（如：301）<span class="text-danger">*</span></label>
+        
+        <!-- 1. 班級 -->
+        <div class="col-md-4">
+          <label class="form-label fw-bold"><span class="field-num">1</span>班級 <span class="text-danger">*</span></label>
           <input type="text" class="form-control" name="studentClass" required placeholder="例如：301">
         </div>
-        <div class="col-md-6">
-          <label class="form-label">座號 <span class="text-danger">*</span></label>
-          <input type="text" class="form-control" name="seatNo" id="seatNoInput" required placeholder="例如:01" maxlength="2" onblur="formatSeatNo(this)">
+
+        <!-- 2. 座號 -->
+        <div class="col-md-4">
+          <label class="form-label fw-bold"><span class="field-num">2</span>座號 (兩碼) <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" name="seatNo" maxlength="2" required placeholder="例如：01" onblur="formatSeatNo(this)">
         </div>
-        <div class="col-md-6">
-          <label class="form-label">學生姓名 <span class="text-danger">*</span></label>
-          <input type="text" class="form-control" name="studentName" required>
+
+        <!-- 3. 姓名 -->
+        <div class="col-md-4">
+          <label class="form-label fw-bold"><span class="field-num">3</span>姓名 <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" name="studentName" required placeholder="例如：王小明">
         </div>
-        <div class="col-md-6">
-          <label class="form-label">學號 <span class="text-danger">*</span></label>
-          <input type="text" class="form-control" name="studentId" required>
+
+        <!-- 4. 性別 -->
+        <div class="col-md-4">
+          <label class="form-label fw-bold"><span class="field-num">4</span>性別 <span class="text-danger">*</span></label>
+          <select class="form-select" name="gender" required>
+            <option value="">-- 請選擇 --</option>
+            <option value="男">男</option>
+            <option value="女">女</option>
+          </select>
         </div>
+
+        <!-- 5. 身分證 -->
+        <div class="col-md-4">
+          <label class="form-label fw-bold"><span class="field-num">5</span>身分證字號 <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" name="nationalId" required maxlength="10" placeholder="例如：A123456789" style="text-transform:uppercase;">
+        </div>
+
+        <!-- 6. 生日 -->
+        <div class="col-md-4">
+          <label class="form-label fw-bold"><span class="field-num">6</span>生日 <span class="text-danger">*</span></label>
+          <input type="date" class="form-control" name="birthday" required>
+        </div>
+
+        <!-- 7. 戶籍地址 -->
         <div class="col-12">
-          <label class="form-label">身分證字號（檔案統一依此命名）<span class="text-danger">*</span></label>
-          <input type="text" class="form-control" name="nationalId" required maxlength="10" placeholder="英文字母請大寫">
+          <label class="form-label fw-bold"><span class="field-num">7</span>戶籍地址 <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" name="residenceAddress" required placeholder="請填寫完整戶籍地址">
         </div>
+
+        <!-- 8. 通訊地址郵遞區號(三碼) -->
+        <div class="col-md-4">
+          <label class="form-label fw-bold"><span class="field-num">8</span>郵遞區號 (3碼) <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" name="zipCode" maxlength="3" required placeholder="例如：802" onblur="formatZipCode(this)">
+        </div>
+
+        <!-- 9. 通訊地址 -->
+        <div class="col-md-8">
+          <label class="form-label fw-bold"><span class="field-num">9</span>通訊地址 <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" name="mailingAddress" required placeholder="請填寫完整通訊地址">
+        </div>
+
+        <!-- 10. 學生手機 -->
+        <div class="col-md-4">
+          <label class="form-label fw-bold"><span class="field-num">10</span>學生手機 <span class="text-danger">*</span></label>
+          <input type="tel" class="form-control" name="studentPhone" required placeholder="例如：0912345678">
+        </div>
+
+        <!-- 11. 緊急聯絡人 -->
+        <div class="col-md-4">
+          <label class="form-label fw-bold"><span class="field-num">11</span>緊急聯絡人 <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" name="emergencyContact" required placeholder="例如：王大明 (父親)">
+        </div>
+
+        <!-- 12. 緊急聯絡人電話 -->
+        <div class="col-md-4">
+          <label class="form-label fw-bold"><span class="field-num">12</span>緊急聯絡人電話 <span class="text-danger">*</span></label>
+          <input type="tel" class="form-control" name="emergencyPhone" required placeholder="例如：0987654321">
+        </div>
+
       </div>
 
-      <!-- 步驟 3: 上傳檔案 -->
+      <!-- 上傳檔案 -->
       <div class="section-title">三、上傳相關檔案</div>
       <div class="row g-3 mb-4">
         <div class="col-12">
@@ -75,7 +133,7 @@
       </div>
 
       <div class="col-12 mt-4">
-        <button type="submit" class="btn btn-primary w-100 btn-lg" id="submitBtn" disabled>確認送出報名</button>
+        <button type="submit" class="btn btn-primary w-100 btn-lg fw-bold" id="submitBtn" disabled>確認送出報名</button>
       </div>
     </form>
 
@@ -84,13 +142,29 @@
 </div>
 
 <script>
-  // ------------------------------------------------------------------
-  // 請貼上您在 GAS 部署獲得的網頁應用程式 URL
-  // ------------------------------------------------------------------
+  // ==================================================================
+  // 【重要設定區】請貼上您的 Apps Script 部署 URL
+  // ==================================================================
   const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycby0CNwZEKY7GIPm58gX_VLeMbTFThsgdNtCYQmdH2q1j-FRd4dL59lGTfA_i1CFVhWR3Q/exec"; 
-  // ------------------------------------------------------------------
+  // ==================================================================
 
-  // 網頁載入時動態向 GAS 請求開放中的管道
+  // 1. 座號自動補 0 函式 (例如：1 -> 01)
+  function formatSeatNo(input) {
+    let val = input.value.trim();
+    if (val && !isNaN(val)) {
+      input.value = val.padStart(2, '0');
+    }
+  }
+
+  // 2. 郵遞區號自動補 0 函式 (例如：50 -> 050)
+  function formatZipCode(input) {
+    let val = input.value.trim();
+    if (val && !isNaN(val)) {
+      input.value = val.padStart(3, '0');
+    }
+  }
+
+  // 動態讀取目前開放的管道
   async function loadOpenChannels() {
     const selectElem = document.getElementById('examTypeSelect');
     const submitBtn = document.getElementById('submitBtn');
@@ -127,7 +201,7 @@
       }
     } catch (err) {
       selectElem.innerHTML = '<option value="">-- 連線失敗 --</option>';
-      alert("無法連線至後端伺服器，請稍後再試。");
+      alert("無法連線至伺服器，請稍後再試。");
     }
   }
 
@@ -142,13 +216,7 @@
       reader.readAsDataURL(file);
     });
   }
-  // 座號自動補零函式 (離焦時自動將 1 轉為 01)
-  function formatSeatNo(input) {
-    let val = input.value.trim();
-    if (val && !isNaN(val)) {
-      input.value = val.padStart(2, '0');
-    }
-  }
+
   async function handleFormSubmit(e) {
     e.preventDefault();
     
@@ -161,7 +229,7 @@
     if (docFile && docFile.size > 10 * 1024 * 1024) { alert("佐證 PDF 檔案過大！請控制在 10MB 以內。"); return; }
 
     submitBtn.disabled = true;
-    submitBtn.innerHTML = '檔案處理與傳輸中，請稍候...';
+    submitBtn.innerHTML = '檔案上傳與資料傳輸中，請稍候...';
     statusMessage.innerHTML = '';
 
     try {
@@ -173,12 +241,22 @@
       const payload = {
         action: 'submitForm',
         examType: document.getElementsByName('examType')[0].value,
+        
+        // 依 1~12 項欄位傳送
         studentClass: document.getElementsByName('studentClass')[0].value,
         seatNo: document.getElementsByName('seatNo')[0].value,
         studentName: document.getElementsByName('studentName')[0].value,
-        studentId: document.getElementsByName('studentId')[0].value,
+        gender: document.getElementsByName('gender')[0].value,
         nationalId: document.getElementsByName('nationalId')[0].value,
+        birthday: document.getElementsByName('birthday')[0].value,
+        residenceAddress: document.getElementsByName('residenceAddress')[0].value,
+        zipCode: document.getElementsByName('zipCode')[0].value,
+        mailingAddress: document.getElementsByName('mailingAddress')[0].value,
+        studentPhone: document.getElementsByName('studentPhone')[0].value,
+        emergencyContact: document.getElementsByName('emergencyContact')[0].value,
+        emergencyPhone: document.getElementsByName('emergencyPhone')[0].value,
         
+        // 檔案資料
         photoName: photoRes ? photoRes.name : '',
         photoType: photoRes ? photoRes.type : '',
         photoData: photoRes ? photoRes.data : '',
@@ -203,7 +281,7 @@
       }
 
     } catch (err) {
-      statusMessage.innerHTML = `<div class="alert alert-danger">傳送失敗，請稍後再試或聯繫註冊組。（錯誤：${err.message || err}）</div>`;
+      statusMessage.innerHTML = `<div class="alert alert-danger">傳送失敗：${err.message || err}</div>`;
     } finally {
       submitBtn.disabled = false;
       submitBtn.innerHTML = '確認送出報名';
