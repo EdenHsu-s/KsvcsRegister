@@ -289,7 +289,7 @@
         populateStudentForm(currentStudentData, existingRegistrationData);
 
         // 顯示目前登入者資訊條
-        document.getElementById('loggedInUserInfo').innerText = `👤 登入者：${currentStudentData.studentName}（學號：${studentId}）`;
+        document.getElementById('loggedInUserInfo').innerText = `👤 登入者：${currentStudentData.studentName || ''}（學號：${studentId}）`;
 
         // 切換頁面：隱藏登入頁，顯示報名表單頁
         document.getElementById('loginSection').style.display = 'none';
@@ -404,12 +404,21 @@
 
   function formatDateForInput(dateStr) {
     if (!dateStr) return '';
-    if (typeof dateStr === 'string' && dateStr.includes('T')) {
-      dateStr = dateStr.split('T')[0];
+    if (typeof dateStr === 'string') {
+      if (dateStr.includes('T')) {
+        dateStr = dateStr.split('T')[0];
+      }
+      // 判斷是否已為 YYYY-MM-DD 格式
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+        return dateStr;
+      }
     }
     const d = new Date(dateStr);
     if (!isNaN(d.getTime())) {
-      return d.toISOString().split('T')[0];
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
     }
     return dateStr;
   }
@@ -640,6 +649,7 @@
       const payload = {
         action: 'submitForm',
         isEditMode: isEditMode, // 告訴後端是「新增」還是「更新」
+        studentId: currentStudentData ? currentStudentData.studentId : document.getElementById('loginStudentId').value.trim(),
         examType: examType,
         examDetails: examDetails,
         
@@ -689,6 +699,7 @@
 
 </body>
 </html>
+
 <template>
 <!DOCTYPE html>
 <html lang="zh-TW">
