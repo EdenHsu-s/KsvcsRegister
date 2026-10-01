@@ -453,8 +453,8 @@
 
     section.style.display = 'block';
 
-    // 判斷是否為「學測」或包含「GSAT」
-    if (/學測|GSAT/i.test(val)) {
+    // 【修正點】包含「學測」、「學科能力測驗」或「GSAT」皆觸發
+    if (/學測|學科能力測驗|GSAT/i.test(val)) {
       container.innerHTML = `
         <label class="form-label fw-bold mb-2">學測選考科目 <span class="text-danger">*</span></label>
         <div class="row g-2">
@@ -477,8 +477,8 @@
         if (document.getElementById('gsat_Society')) document.getElementById('gsat_Society').checked = isTrue(savedDetails.gsat_Society ?? savedDetails['社會']);
       }
     } 
-    // 判斷是否為「統測」或包含「TVE」
-    else if (/統測|TVE/i.test(val)) {
+    // 【修正點】包含「統測」、「統一入學測驗」或「TVE」皆觸發
+    else if (/統測|統一入學測驗|TVE/i.test(val)) {
       container.innerHTML = `
         <div class="row g-3">
           <div class="col-md-6">
@@ -594,8 +594,8 @@
     const examType = document.getElementById('examTypeInput').value;
     const photoFile = document.getElementById('photoFile').files[0];
 
-    // 學測管道防呆：檢查是否至少勾選了一門考科
-    if (/學測|GSAT/i.test(examType)) {
+    // 【修正點】學測管道防呆比對同步更新
+    if (/學測|學科能力測驗|GSAT/i.test(examType)) {
       const hasChecked = ['gsat_Chinese', 'gsat_English', 'gsat_MathA', 'gsat_MathB', 'gsat_Science', 'gsat_Society']
         .some(id => document.getElementById(id) && document.getElementById(id).checked);
       if (!hasChecked) {
