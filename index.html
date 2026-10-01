@@ -74,7 +74,7 @@
         <span class="fs-4 me-2">📌</span>
         <div>
           <strong>您之前已完成報名！</strong>
-          <div class="small text-muted">下表已載入您過往填寫的資料，您可以直接修改內容並重新點擊下方按鈕更新報名紀錄。</div>
+          <div class="small text-muted">下表已自動載入您上次報名填寫的內容，您可以直接修改資料後重新送出更新。</div>
         </div>
       </div>
     </div>
@@ -99,7 +99,7 @@
         </div>
       </div>
 
-      <!-- 三、學生基本資料 (自動帶入) -->
+      <!-- 三、學生基本資料 -->
       <div class="section-title">三、學生基本資料</div>
       <div class="row g-3 mb-4">
         
@@ -261,12 +261,13 @@
 
       if (res.status === 'success' && res.student) {
         currentStudentData = res.student;
-        existingRegistrationData = res.existingRegistration || null;
-
-        // 判斷是否為修改模式
+        
+        // 判斷是否有過往報名紀錄
+        const hasExisting = res.existingRegistration && Object.keys(res.existingRegistration).length > 0;
+        existingRegistrationData = hasExisting ? res.existingRegistration : null;
         isEditMode = !!existingRegistrationData;
 
-        // 設定照片欄位是否必填
+        // 設定照片欄位是否必填與介面提示
         const photoFileInput = document.getElementById('photoFile');
         const photoReqMark = document.getElementById('photoRequiredMark');
         const photoNotice = document.getElementById('photoEditNotice');
@@ -285,7 +286,7 @@
           document.getElementById('submitBtn').innerText = '確認送出報名';
         }
 
-        // 帶入學生基本資料與舊報名紀錄
+        // 帶入學生表單資料：有報名過抓報名資料，未報名過抓學生名冊
         populateStudentForm(currentStudentData, existingRegistrationData);
 
         // 顯示目前登入者資訊條
@@ -295,7 +296,7 @@
         document.getElementById('loginSection').style.display = 'none';
         document.getElementById('registrationSection').style.display = 'block';
 
-        // 載入開放中的報名管道並自動勾選舊資料
+        // 載入開放中的報名管道並自動帶入舊的動態選擇欄位
         await loadOpenChannels(existingRegistrationData);
 
       } else {
@@ -309,22 +310,25 @@
     }
   }
 
-  // 自動將登入學生資料與舊報名紀錄填入表單
-  function populateStudentForm(s, reg) {
-    const data = reg || s; // 優先使用已有報名資料，若無則使用學生基本檔
+  // 填寫表單資料 (優先使用舊報名紀錄，次之使用學生名冊)
+  function populateStudentForm(studentMaster, existingReg) {
+    const hasRegistered = existingReg && Object.keys(existingReg).length > 0;
+    const sourceData = hasRegistered ? existingReg : studentMaster;
 
-    document.getElementsByName('studentClass')[0].value = data.studentClass || s.studentClass || '';
-    document.getElementsByName('seatNo')[0].value = data.seatNo || s.seatNo || '';
-    document.getElementsByName('studentName')[0].value = data.studentName || s.studentName || '';
-    document.getElementsByName('gender')[0].value = data.gender || s.gender || '';
-    document.getElementsByName('nationalId')[0].value = data.nationalId || s.nationalId || '';
-    document.getElementsByName('birthday')[0].value = formatDateForInput(data.birthday || s.birthday);
-    document.getElementsByName('residenceAddress')[0].value = data.residenceAddress || s.residenceAddress || '';
-    document.getElementsByName('zipCode')[0].value = data.zipCode || s.zipCode || '';
-    document.getElementsByName('mailingAddress')[0].value = data.mailingAddress || s.mailingAddress || '';
-    document.getElementsByName('studentPhone')[0].value = data.studentPhone || s.studentPhone || '';
-    document.getElementsByName('emergencyContact')[0].value = data.emergencyContact || s.emergencyContact || '';
-    document.getElementsByName('emergencyPhone')[0].value = data.emergencyPhone || s.emergencyPhone || '';
+    if (!sourceData) return;
+
+    document.getElementsByName('studentClass')[0].value = sourceData.studentClass || studentMaster.studentClass || '';
+    document.getElementsByName('seatNo')[0].value = sourceData.seatNo || studentMaster.seatNo || '';
+    document.getElementsByName('studentName')[0].value = sourceData.studentName || studentMaster.studentName || '';
+    document.getElementsByName('gender')[0].value = sourceData.gender || studentMaster.gender || '';
+    document.getElementsByName('nationalId')[0].value = sourceData.nationalId || studentMaster.nationalId || '';
+    document.getElementsByName('birthday')[0].value = formatDateForInput(sourceData.birthday || studentMaster.birthday);
+    document.getElementsByName('residenceAddress')[0].value = sourceData.residenceAddress || studentMaster.residenceAddress || '';
+    document.getElementsByName('zipCode')[0].value = sourceData.zipCode || studentMaster.zipCode || '';
+    document.getElementsByName('mailingAddress')[0].value = sourceData.mailingAddress || studentMaster.mailingAddress || '';
+    document.getElementsByName('studentPhone')[0].value = sourceData.studentPhone || studentMaster.studentPhone || '';
+    document.getElementsByName('emergencyContact')[0].value = sourceData.emergencyContact || studentMaster.emergencyContact || '';
+    document.getElementsByName('emergencyPhone')[0].value = sourceData.emergencyPhone || studentMaster.emergencyPhone || '';
 
     formatSeatNo(document.getElementsByName('seatNo')[0]);
     formatZipCode(document.getElementsByName('zipCode')[0]);
@@ -408,7 +412,6 @@
       if (dateStr.includes('T')) {
         dateStr = dateStr.split('T')[0];
       }
-      // 判斷是否已為 YYYY-MM-DD 格式
       if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
         return dateStr;
       }
@@ -437,6 +440,11 @@
 
     section.style.display = 'block';
 
+    // 若 savedDetails 為 JSON 字串，自動解析
+    if (typeof savedDetails === 'string') {
+      try { savedDetails = JSON.parse(savedDetails); } catch(e) {}
+    }
+
     if (/學測|學科能力|GSAT/i.test(val)) {
       container.innerHTML = `
         <label class="form-label fw-bold mb-2">學測選考科目 <span class="text-danger">*</span></label>
@@ -451,14 +459,15 @@
         <div class="form-text text-muted mt-2">請勾選本次欲報考之學測科目（可複選）。系統將自動於後端試算表呈現各科目為 1 或 0。</div>
       `;
 
-      // 如果有過往報名資料，進行自動勾選
+      // 自動勾選舊紀錄
       if (savedDetails) {
-        document.getElementById('gsat_Chinese').checked = Number(savedDetails.gsat_Chinese) === 1;
-        document.getElementById('gsat_English').checked = Number(savedDetails.gsat_English) === 1;
-        document.getElementById('gsat_MathA').checked = Number(savedDetails.gsat_MathA) === 1;
-        document.getElementById('gsat_MathB').checked = Number(savedDetails.gsat_MathB) === 1;
-        document.getElementById('gsat_Science').checked = Number(savedDetails.gsat_Science) === 1;
-        document.getElementById('gsat_Society').checked = Number(savedDetails.gsat_Society) === 1;
+        const isChecked = (v) => v === 1 || v === "1" || v === true || String(v).toLowerCase() === "true";
+        if (document.getElementById('gsat_Chinese')) document.getElementById('gsat_Chinese').checked = isChecked(savedDetails.gsat_Chinese);
+        if (document.getElementById('gsat_English')) document.getElementById('gsat_English').checked = isChecked(savedDetails.gsat_English);
+        if (document.getElementById('gsat_MathA')) document.getElementById('gsat_MathA').checked = isChecked(savedDetails.gsat_MathA);
+        if (document.getElementById('gsat_MathB')) document.getElementById('gsat_MathB').checked = isChecked(savedDetails.gsat_MathB);
+        if (document.getElementById('gsat_Science')) document.getElementById('gsat_Science').checked = isChecked(savedDetails.gsat_Science);
+        if (document.getElementById('gsat_Society')) document.getElementById('gsat_Society').checked = isChecked(savedDetails.gsat_Society);
       }
     } 
     else if (/統測|四技二專|統一入學|TVE/i.test(val)) {
@@ -509,8 +518,8 @@
       `;
 
       if (savedDetails) {
-        if (savedDetails.tveCluster) document.getElementById('tveCluster').value = savedDetails.tveCluster;
-        if (savedDetails.tveMath) document.getElementById('tveMath').value = savedDetails.tveMath;
+        if (savedDetails.tveCluster && document.getElementById('tveCluster')) document.getElementById('tveCluster').value = savedDetails.tveCluster;
+        if (savedDetails.tveMath && document.getElementById('tveMath')) document.getElementById('tveMath').value = savedDetails.tveMath;
       }
     } 
     else {
@@ -520,7 +529,7 @@
           <input type="text" class="form-control" id="customNote" placeholder="如有特殊選報需求請在此填寫">
         </div>
       `;
-      if (savedDetails && savedDetails.customNote) {
+      if (savedDetails && savedDetails.customNote && document.getElementById('customNote')) {
         document.getElementById('customNote').value = savedDetails.customNote;
       }
     }
@@ -559,10 +568,16 @@
         selectElem.disabled = false;
         submitBtn.disabled = false;
 
-        // 若有舊報名紀錄，自動選擇對應管道
+        // 若有舊報名紀錄，自動選擇對應管道並帶入舊選項
         if (savedRegData && savedRegData.examType) {
-          selectElem.value = savedRegData.examType;
-          handleExamTypeChange(selectElem, savedRegData.examDetails);
+          const options = Array.from(selectElem.options);
+          const matchedOpt = options.find(opt => opt.value.trim() === savedRegData.examType.trim());
+          if (matchedOpt) {
+            selectElem.value = matchedOpt.value;
+          } else {
+            selectElem.value = savedRegData.examType;
+          }
+          handleExamTypeChange(selectElem, savedRegData.examDetails || savedRegData);
         }
 
       } else {
@@ -605,18 +620,25 @@
       return; 
     }
 
-    // 收集動態考試細項資料
+    // 檢查 DOM 畫面實際渲染的管道類型
+    const isGsatForm = document.getElementById('gsat_Chinese') !== null;
+    const isTveForm = document.getElementById('tveCluster') !== null;
+
     let examDetails = {};
 
-    if (/學測|學科能力|GSAT/i.test(examType)) {
-      // 依需求將學測各科目轉為 1 (選擇) 或 0 (未選)
+    if (isGsatForm || /學測|學科能力|GSAT/i.test(examType)) {
+      const getCheckVal = (id) => {
+        const elem = document.getElementById(id);
+        return (elem && elem.checked) ? 1 : 0;
+      };
+
       examDetails = {
-        gsat_Chinese: document.getElementById('gsat_Chinese').checked ? 1 : 0,
-        gsat_English: document.getElementById('gsat_English').checked ? 1 : 0,
-        gsat_MathA: document.getElementById('gsat_MathA').checked ? 1 : 0,
-        gsat_MathB: document.getElementById('gsat_MathB').checked ? 1 : 0,
-        gsat_Science: document.getElementById('gsat_Science').checked ? 1 : 0,
-        gsat_Society: document.getElementById('gsat_Society').checked ? 1 : 0
+        gsat_Chinese: getCheckVal('gsat_Chinese'),
+        gsat_English: getCheckVal('gsat_English'),
+        gsat_MathA: getCheckVal('gsat_MathA'),
+        gsat_MathB: getCheckVal('gsat_MathB'),
+        gsat_Science: getCheckVal('gsat_Science'),
+        gsat_Society: getCheckVal('gsat_Society')
       };
 
       const selectedCount = Object.values(examDetails).reduce((sum, val) => sum + val, 0);
@@ -624,16 +646,16 @@
         alert("請至少選擇一門【學測】選考科目！");
         return;
       }
-    } else if (/統測|四技二專|統一入學|TVE/i.test(examType)) {
-      const cluster = document.getElementById('tveCluster').value;
-      const math = document.getElementById('tveMath').value;
+    } else if (isTveForm || /統測|四技二專|統一入學|TVE/i.test(examType)) {
+      const cluster = document.getElementById('tveCluster') ? document.getElementById('tveCluster').value : '';
+      const math = document.getElementById('tveMath') ? document.getElementById('tveMath').value : '';
       if (!cluster || !math) {
         alert("請完整選擇統測的【報考群類】與【數學類別】！");
         return;
       }
       examDetails.tveCluster = cluster;
       examDetails.tveMath = math;
-      examDetails.tveSubjects = document.getElementById('tveSubjects').value;
+      examDetails.tveSubjects = document.getElementById('tveSubjects') ? document.getElementById('tveSubjects').value : '';
     } else {
       const noteElem = document.getElementById('customNote');
       examDetails.customNote = noteElem ? noteElem.value : '';
@@ -648,11 +670,23 @@
 
       const payload = {
         action: 'submitForm',
-        isEditMode: isEditMode, // 告訴後端是「新增」還是「更新」
+        isEditMode: isEditMode,
         studentId: currentStudentData ? currentStudentData.studentId : document.getElementById('loginStudentId').value.trim(),
         examType: examType,
         examDetails: examDetails,
         
+        // 攤平考科欄位，確保相容後端多種寫入邏輯
+        gsat_Chinese: examDetails.gsat_Chinese !== undefined ? examDetails.gsat_Chinese : 0,
+        gsat_English: examDetails.gsat_English !== undefined ? examDetails.gsat_English : 0,
+        gsat_MathA: examDetails.gsat_MathA !== undefined ? examDetails.gsat_MathA : 0,
+        gsat_MathB: examDetails.gsat_MathB !== undefined ? examDetails.gsat_MathB : 0,
+        gsat_Science: examDetails.gsat_Science !== undefined ? examDetails.gsat_Science : 0,
+        gsat_Society: examDetails.gsat_Society !== undefined ? examDetails.gsat_Society : 0,
+        tveCluster: examDetails.tveCluster || '',
+        tveMath: examDetails.tveMath || '',
+        tveSubjects: examDetails.tveSubjects || '',
+        customNote: examDetails.customNote || '',
+
         // 基本資料
         studentClass: document.getElementsByName('studentClass')[0].value,
         seatNo: document.getElementsByName('seatNo')[0].value,
@@ -667,7 +701,7 @@
         emergencyContact: document.getElementsByName('emergencyContact')[0].value,
         emergencyPhone: document.getElementsByName('emergencyPhone')[0].value,
         
-        // 相片檔案 (若修改模式且未選擇新相片，傳空值，後端保留原檔)
+        // 相片檔案
         photoName: photoRes ? photoRes.name : '',
         photoType: photoRes ? photoRes.type : '',
         photoData: photoRes ? photoRes.data : ''
