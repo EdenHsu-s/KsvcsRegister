@@ -276,7 +276,7 @@
 
 </div>
 
-<!-- Google Apps Script 後端網址 -->
+<!-- Google Apps Script 後端網址與邏輯處理 -->
 <script>
   const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycby0CNwZEKY7GIPm58gX_VLeMbTFThsgdNtCYQmdH2q1j-FRd4dL59lGTfA_i1CFVhWR3Q/exec"; 
 
@@ -312,6 +312,45 @@
       }
     }
     return '';
+  }
+
+  // 3. 智慧型考科勾選判斷（支援：精確比對、模糊名稱、數字 1、字串 "1"、"true"、"V"、"是"、JSON 字串自動解包）
+  function checkSubjectStatus(detailsObj, keywords) {
+    if (!detailsObj || typeof detailsObj !== 'object') return false;
+
+    // A. 精確 Key 比對 (無視大小寫與前後空格)
+    const cleanMap = {};
+    Object.keys(detailsObj).forEach(k => {
+      if (k !== undefined && k !== null) {
+        cleanMap[String(k).trim().toLowerCase()] = detailsObj[k];
+      }
+    });
+
+    for (let kw of keywords) {
+      const cleanKw = String(kw).trim().toLowerCase();
+      if (cleanMap[cleanKw] !== undefined && cleanMap[cleanKw] !== null) {
+        const val = String(cleanMap[cleanKw]).trim().toLowerCase();
+        if (['1', 'true', 'v', 'y', 'yes', '是', 'o', 'checked'].includes(val) || Number(val) > 0) {
+          return true;
+        }
+      }
+    }
+
+    // B. 模糊 Key 比對 (去除標點符號與特殊字元後進行子字串包含比對)
+    for (let key of Object.keys(detailsObj)) {
+      const cleanKey = String(key).toLowerCase().replace(/[^a-z0-9\u4e00-\u9fa5]/g, '');
+      for (let kw of keywords) {
+        const cleanKw = String(kw).toLowerCase().replace(/[^a-z0-9\u4e00-\u9fa5]/g, '');
+        if (cleanKw && (cleanKey.includes(cleanKw) || cleanKw.includes(cleanKey))) {
+          const val = String(detailsObj[key]).trim().toLowerCase();
+          if (['1', 'true', 'v', 'y', 'yes', '是', 'o', 'checked'].includes(val) || Number(val) > 0) {
+            return true;
+          }
+        }
+      }
+    }
+
+    return false;
   }
 
   // 向 GAS 後端取得開放中的報名管道
@@ -428,7 +467,7 @@
         // 根據選定的管道，展開「第二區塊：考科細項」並帶入過往選擇
         handleExamTypeChange(selectedChannel, existingRegistrationData);
 
-        document.getElementById('loggedInUserInfo').innerText = `👤 登入者：${currentStudentData.studentName || ''}（學號：${studentId}）`;
+        document.getElementById('loggedInUserInfo').innerText = `👤 登入者：${currentStudentData.studentName || getPropValue(currentStudentData, '姓名', '學生姓名')}（學號：${studentId}）`;
         document.getElementById('loginSection').style.display = 'none';
         document.getElementById('registrationSection').style.display = 'block';
 
@@ -444,7 +483,7 @@
     }
   }
 
-  // 自動填入學生基本資料 (優先從過往紀錄提取，若無才拿學生名冊資料補足)
+  // 自動填入學生基本資料 (擴充更多試算表中文欄位別名)
   function populateStudentForm(master, existing) {
     const getValue = (...keys) => {
       // 1. 優先查過往紀錄
@@ -454,24 +493,24 @@
       return getPropValue(master, ...keys);
     };
 
-    document.getElementsByName('studentClass')[0].value = getValue('studentClass', '班級');
+    document.getElementsByName('studentClass')[0].value = getValue('studentClass', '班級', '班級/科別', '科別');
     document.getElementsByName('seatNo')[0].value = getValue('seatNo', '座號');
-    document.getElementsByName('studentName')[0].value = getValue('studentName', '姓名');
+    document.getElementsByName('studentName')[0].value = getValue('studentName', '姓名', '學生姓名');
     document.getElementsByName('gender')[0].value = getValue('gender', '性別');
     document.getElementsByName('nationalId')[0].value = getValue('nationalId', '身分證字號', '身分證', '身分證號');
     document.getElementsByName('birthday')[0].value = formatDateForInput(getValue('birthday', '生日', '出生年月日', '出生日期'));
-    document.getElementsByName('residenceAddress')[0].value = getValue('residenceAddress', '戶籍地址', '戶籍地', '住址', '地址');
-    document.getElementsByName('zipCode')[0].value = getValue('zipCode', '郵遞區號', '郵遞區');
-    document.getElementsByName('mailingAddress')[0].value = getValue('mailingAddress', '通訊地址', '聯絡地址');
+    document.getElementsByName('residenceAddress')[0].value = getValue('residenceAddress', '戶籍地址', '戶籍地', '住址', '地址', '戶籍地址(含鄰里)');
+    document.getElementsByName('zipCode')[0].value = getValue('zipCode', '郵遞區號', '郵遞區', '區號');
+    document.getElementsByName('mailingAddress')[0].value = getValue('mailingAddress', '通訊地址', '聯絡地址', '通訊處');
     document.getElementsByName('studentPhone')[0].value = getValue('studentPhone', '學生手機', '手機', '學生電話', '電話', '聯絡電話');
-    document.getElementsByName('emergencyContact')[0].value = getValue('emergencyContact', '緊急聯絡人', '緊急聯絡人姓名', '聯絡人', '家長姓名');
-    document.getElementsByName('emergencyPhone')[0].value = getValue('emergencyPhone', '緊急聯絡人電話', '緊急聯絡電話', '緊急電話', '聯絡人電話', '家長電話');
+    document.getElementsByName('emergencyContact')[0].value = getValue('emergencyContact', '緊急聯絡人', '緊急聯絡人姓名', '聯絡人', '家長姓名', '監護人');
+    document.getElementsByName('emergencyPhone')[0].value = getValue('emergencyPhone', '緊急聯絡人電話', '緊急聯絡電話', '緊急電話', '聯絡人電話', '家長電話', '監護人電話');
 
     formatSeatNo(document.getElementsByName('seatNo')[0]);
     formatZipCode(document.getElementsByName('zipCode')[0]);
   }
 
-  // 根據管道渲染「二、考試科目與管道細項」
+  // 根據管道渲染「二、考試科目與管道細項」並自動回顯考科
   function handleExamTypeChange(examTypeValue, savedDetails = null) {
     const val = examTypeValue ? examTypeValue.trim() : "";
     const section = document.getElementById('dynamicExamSection');
@@ -500,31 +539,41 @@
       `;
 
       if (savedDetails) {
-        const rawDetails = savedDetails.examDetails || savedDetails;
-        const details = normalizeObject(rawDetails);
+        let rawDetails = savedDetails.examDetails || savedDetails;
         
-        // 超強寬鬆的勾選狀態判定機制
-        const isValueChecked = (...keys) => {
-          for (let key of keys) {
-            const v = details[key];
-            if (v === undefined || v === null) continue;
-            if (typeof v === 'boolean') return v;
-            if (typeof v === 'number') return v > 0;
-            const str = String(v).trim().toLowerCase();
-            if (str !== '' && str !== '0' && str !== 'false' && str !== '否' && str !== 'no') return true;
-          }
-          return false;
-        };
+        // 自動解析字串化 JSON
+        if (typeof rawDetails === 'string') {
+          try { rawDetails = JSON.parse(rawDetails); } catch(e) {}
+        }
 
-        if (document.getElementById('gsat_Chinese')) document.getElementById('gsat_Chinese').checked = isValueChecked('gsat_Chinese', '國文', '國文科', '國');
-        if (document.getElementById('gsat_English')) document.getElementById('gsat_English').checked = isValueChecked('gsat_English', '英文', '英文科', '英');
-        if (document.getElementById('gsat_MathA')) document.getElementById('gsat_MathA').checked = isValueChecked('gsat_MathA', '數學A', '數A');
-        if (document.getElementById('gsat_MathB')) document.getElementById('gsat_MathB').checked = isValueChecked('gsat_MathB', '數學B', '數B');
-        if (document.getElementById('gsat_Science')) document.getElementById('gsat_Science').checked = isValueChecked('gsat_Science', '自然', '自然科', '自');
-        if (document.getElementById('gsat_Society')) document.getElementById('gsat_Society').checked = isValueChecked('gsat_Society', '社會', '社會科', '社');
+        // 整合根物件與內部考科物件
+        let combinedData = {};
+        if (typeof savedDetails === 'object') Object.assign(combinedData, savedDetails);
+        if (typeof rawDetails === 'object') Object.assign(combinedData, rawDetails);
+
+        console.log("【除錯 Log】考科自動帶入的比對資料物件：", combinedData);
+
+        if (document.getElementById('gsat_Chinese')) {
+          document.getElementById('gsat_Chinese').checked = checkSubjectStatus(combinedData, ['gsat_Chinese', 'gsatChinese', 'Chinese', '國文', '國文科', '學測國文', '國']);
+        }
+        if (document.getElementById('gsat_English')) {
+          document.getElementById('gsat_English').checked = checkSubjectStatus(combinedData, ['gsat_English', 'gsatEnglish', 'English', '英文', '英文科', '學測英文', '英']);
+        }
+        if (document.getElementById('gsat_MathA')) {
+          document.getElementById('gsat_MathA').checked = checkSubjectStatus(combinedData, ['gsat_MathA', 'gsatMathA', 'MathA', '數學A', '數A', '學測數學A']);
+        }
+        if (document.getElementById('gsat_MathB')) {
+          document.getElementById('gsat_MathB').checked = checkSubjectStatus(combinedData, ['gsat_MathB', 'gsatMathB', 'MathB', '數學B', '數B', '學測數學B']);
+        }
+        if (document.getElementById('gsat_Science')) {
+          document.getElementById('gsat_Science').checked = checkSubjectStatus(combinedData, ['gsat_Science', 'gsatScience', 'Science', '自然', '自然科', '學測自然', '自']);
+        }
+        if (document.getElementById('gsat_Society')) {
+          document.getElementById('gsat_Society').checked = checkSubjectStatus(combinedData, ['gsat_Society', 'gsatSociety', 'Society', '社會', '社會科', '學測社會', '社']);
+        }
       }
     } 
-    // 包含「統測」、「統一入學測驗」或「TVE」皆觸發
+    // 包含「統測」、「統一入學測驗」或「TVE」身體觸發
     else if (/統測|統一入學測驗|TVE/i.test(val)) {
       container.innerHTML = `
         <div class="row g-3">
@@ -540,9 +589,13 @@
       `;
 
       if (savedDetails) {
-        const rawDetails = savedDetails.examDetails || savedDetails;
-        if (document.getElementById('tveCluster')) document.getElementById('tveCluster').value = getPropValue(rawDetails, 'tveCluster', '統測群類', '報考群類', '群類', '類別');
-        if (document.getElementById('tveMath')) document.getElementById('tveMath').value = getPropValue(rawDetails, 'tveMath', '統測數學', '數學類別', '統測數學考卷類別', '數學');
+        let rawDetails = savedDetails.examDetails || savedDetails;
+        if (typeof rawDetails === 'string') {
+          try { rawDetails = JSON.parse(rawDetails); } catch(e) {}
+        }
+        let combinedData = Object.assign({}, savedDetails, rawDetails);
+        if (document.getElementById('tveCluster')) document.getElementById('tveCluster').value = getPropValue(combinedData, 'tveCluster', '統測群類', '報考群類', '群類', '類別');
+        if (document.getElementById('tveMath')) document.getElementById('tveMath').value = getPropValue(combinedData, 'tveMath', '統測數學', '數學類別', '統測數學考卷類別', '數學');
       }
     } 
     // 其他升學管道
@@ -552,8 +605,12 @@
         <input type="text" class="form-control" id="customNote" placeholder="如有其他特殊說明請在此填寫">
       `;
       if (savedDetails) {
-        const rawDetails = savedDetails.examDetails || savedDetails;
-        if (document.getElementById('customNote')) document.getElementById('customNote').value = getPropValue(rawDetails, 'customNote', '備註', '說明', '管道說明');
+        let rawDetails = savedDetails.examDetails || savedDetails;
+        if (typeof rawDetails === 'string') {
+          try { rawDetails = JSON.parse(rawDetails); } catch(e) {}
+        }
+        let combinedData = Object.assign({}, savedDetails, rawDetails);
+        if (document.getElementById('customNote')) document.getElementById('customNote').value = getPropValue(combinedData, 'customNote', '備註', '說明', '管道說明');
       }
     }
   }
@@ -567,12 +624,14 @@
 
   // 座號自動補零 (2碼)
   function formatSeatNo(input) {
+    if (!input) return;
     let val = input.value.trim();
     if (val && !isNaN(val)) input.value = val.padStart(2, '0');
   }
 
   // 郵遞區號自動補零 (3碼)
   function formatZipCode(input) {
+    if (!input) return;
     let val = input.value.trim();
     if (val && !isNaN(val)) input.value = val.padStart(3, '0');
   }
@@ -613,13 +672,37 @@
     }
   }
 
-  // 日期格式轉為 YYYY-MM-DD
+  // 支援西元、民國年與多種日期格式轉為 HTML5 <input type="date"> 要求的 YYYY-MM-DD
   function formatDateForInput(dateStr) {
     if (!dateStr) return '';
+    dateStr = String(dateStr).trim();
+
+    // 處理民國年格式（例如 115/05/20 或 115-05-20）
+    const rocMatch = dateStr.match(/^(\d{2,3})[/-](\d{1,2})[/-](\d{1,2})$/);
+    if (rocMatch && parseInt(rocMatch[1]) < 1900) {
+      const year = parseInt(rocMatch[1]) + 1911;
+      const month = String(rocMatch[2]).padStart(2, '0');
+      const day = String(rocMatch[3]).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
     const d = new Date(dateStr);
     if (!isNaN(d.getTime())) {
-      return d.toISOString().split('T')[0];
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
     }
+
+    // 正則匹配標準 YYYY/MM/DD 或 YYYY-MM-DD
+    const stdMatch = dateStr.match(/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})/);
+    if (stdMatch) {
+      const year = stdMatch[1];
+      const month = String(stdMatch[2]).padStart(2, '0');
+      const day = String(stdMatch[3]).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
     return dateStr;
   }
 
