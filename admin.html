@@ -54,7 +54,6 @@
       border-radius: 12px; 
       font-size: 0.85rem; 
     }
-    /* 載入中遮罩 */
     .loading-overlay {
       display: none;
       position: absolute;
@@ -118,7 +117,6 @@
           </div>
           <div class="col-md-auto">
             <select class="form-select form-select-lg bg-dark text-light border-secondary" id="yearSelect" onchange="onYearChange()">
-              <!-- 動態產生學年度選單 -->
             </select>
           </div>
           <div class="col-md-auto">
@@ -141,7 +139,7 @@
       <div class="mb-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <div class="d-flex align-items-center gap-2">
-            <h5 class="fw-bold text-info mb-0">【<span id="editingYearTitle">--</span>】管道開放狀態：</h5>
+            <h5 class="fw-bold text-info mb-0">【<span id="editingYearTitle">--</span>】管道開放與科目細項設定：</h5>
             <span id="unsavedBadge" class="badge bg-danger" style="display: none;">未儲存變更</span>
           </div>
           <button class="btn btn-sm btn-outline-success" onclick="addCustomChannelPrompt()">
@@ -166,18 +164,13 @@
 </div>
 
 <script>
-  // ==================================================================
-  // 【重要設定區】Apps Script 部署 Web App URL
-  // ==================================================================
   const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycby0CNwZEKY7GIPm58gX_VLeMbTFThsgdNtCYQmdH2q1j-FRd4dL59lGTfA_i1CFVhWR3Q/exec"; 
-  // ==================================================================
 
   let currentPassword = "";
   let currentChannelsData = [];
   let globalActiveYear = "";
-  let isDirty = false; // 是否有未儲存之變更
+  let isDirty = false;
 
-  // 頁面載入檢查 Session
   window.addEventListener('DOMContentLoaded', () => {
     const savedPwd = sessionStorage.getItem('adminPwd');
     if (savedPwd) {
@@ -186,7 +179,6 @@
     }
   });
 
-  // 未儲存離開提醒
   window.addEventListener('beforeunload', (e) => {
     if (isDirty) {
       e.preventDefault();
@@ -194,7 +186,6 @@
     }
   });
 
-  // 顯示/隱藏 Loading 遮罩
   function toggleLoading(show, text = "資料處理中，請稍候...") {
     const overlay = document.getElementById('loadingOverlay');
     document.getElementById('loadingText').innerText = text;
@@ -202,13 +193,11 @@
     else overlay.classList.remove('show');
   }
 
-  // 標記變更狀態
   function setDirty(dirty) {
     isDirty = dirty;
     document.getElementById('unsavedBadge').style.display = dirty ? 'inline-block' : 'none';
   }
 
-  // 初始化學年度選單
   function initYearDropdown(selectedTargetYear) {
     const yearSelect = document.getElementById('yearSelect');
     const today = new Date();
@@ -233,7 +222,6 @@
     }
   }
 
-  // 登入驗證
   async function adminLogin() {
     const pwdInput = document.getElementById('adminPassword');
     const loginMsg = document.getElementById('loginMsg');
@@ -253,24 +241,20 @@
     }
   }
 
-  // 安全登出
   function logout() {
     if (isDirty && !confirm("您有未儲存的變更，確定要登出嗎？")) return;
     sessionStorage.removeItem('adminPwd');
     location.reload();
   }
 
-  // 切換學年度處理
   async function onYearChange() {
     if (isDirty && !confirm("您有未儲存的變更，切換學年度將會遺失變更。確定要切換嗎？")) {
-      // 復原選單選擇
       document.getElementById('yearSelect').value = document.getElementById('editingYearTitle').innerText;
       return;
     }
     await fetchYearConfig();
   }
 
-  // 取得學年度設定
   async function fetchYearConfig() {
     const selectedYear = document.getElementById('yearSelect').value;
     const loginMsg = document.getElementById('loginMsg');
@@ -316,7 +300,6 @@
     }
   }
 
-  // 渲染管道開關列表
   function renderChannelsList() {
     const container = document.getElementById('channelsContainer');
     container.innerHTML = '';
@@ -332,6 +315,7 @@
       
       const isFirst = idx === 0;
       const isLast = idx === currentChannelsData.length - 1;
+      const showDetails = ch.showDetails !== false; // 預設為 true
 
       row.innerHTML = `
         <div class="d-flex align-items-center gap-2">
@@ -355,7 +339,15 @@
             </button>
           </div>
 
-          <!-- 開關 Switch -->
+          <!-- 顯示科目細項 Switch -->
+          <div class="form-check form-switch d-flex align-items-center m-0 me-2" title="開啟時前台將顯示科目細項供學生勾選">
+            <input class="form-check-input me-1" type="checkbox" id="details_switch_${idx}" ${showDetails ? 'checked' : ''} onchange="toggleChannelDetails(${idx}, this.checked)">
+            <label class="form-check-label small" for="details_switch_${idx}">
+              ${showDetails ? '<span class="text-info">顯示細項</span>' : '<span class="text-muted">隱藏細項</span>'}
+            </label>
+          </div>
+
+          <!-- 開放報名 Switch -->
           <div class="form-check form-switch d-flex align-items-center m-0">
             <input class="form-check-input me-2" type="checkbox" id="switch_${idx}" ${ch.enabled ? 'checked' : ''} onchange="toggleChannel(${idx}, this.checked)">
             <label class="form-check-label fw-bold" for="switch_${idx}" style="min-width: 60px;">
@@ -368,14 +360,18 @@
     });
   }
 
-  // 切換 Switch 開關
   function toggleChannel(idx, isChecked) {
     currentChannelsData[idx].enabled = isChecked;
     setDirty(true);
     renderChannelsList();
   }
 
-  // 重新命名管道
+  function toggleChannelDetails(idx, isChecked) {
+    currentChannelsData[idx].showDetails = isChecked;
+    setDirty(true);
+    renderChannelsList();
+  }
+
   function editChannelName(idx) {
     const oldName = currentChannelsData[idx].name;
     const newName = prompt("請輸入新的管道名稱：", oldName);
@@ -391,7 +387,6 @@
     }
   }
 
-  // 刪除管道
   function deleteChannel(idx) {
     const targetName = currentChannelsData[idx].name;
     if (confirm(`確定要刪除【${targetName}】管道嗎？\n（儲存發布後將生效）`)) {
@@ -401,7 +396,6 @@
     }
   }
 
-  // 調整管道順序 (上移/下移)
   function moveChannel(idx, direction) {
     const newIdx = idx + direction;
     if (newIdx < 0 || newIdx >= currentChannelsData.length) return;
@@ -414,7 +408,6 @@
     renderChannelsList();
   }
 
-  // 指定為前台開放學年度
   async function setAsActiveYear() {
     const selectedYear = document.getElementById('yearSelect').value;
     if (!confirm(`確定要將【${selectedYear}】設定為前台學生目前填報的學年度嗎？\n（前台網頁將全面切換至此學年度）`)) return;
@@ -448,7 +441,6 @@
     }
   }
 
-  // 新增自訂管道
   function addCustomChannelPrompt() {
     const newName = prompt("請輸入欲新增的升學管道名稱（例如：校內繁星推薦、特殊選才二階段）：");
     if (newName && newName.trim()) {
@@ -457,13 +449,12 @@
         alert("該管道名稱已存在！");
         return;
       }
-      currentChannelsData.push({ name: name, enabled: true });
+      currentChannelsData.push({ name: name, enabled: true, showDetails: true });
       setDirty(true);
       renderChannelsList();
     }
   }
 
-  // 新增學年度
   function addNewYearPrompt() {
     const yearNum = prompt("請輸入欲新增的民國學年度數字（例如：116）：");
     if (yearNum && !isNaN(yearNum.trim())) {
@@ -491,7 +482,6 @@
     }
   }
 
-  // 刪除當前學年度設定
   async function deleteCurrentYearConfig() {
     const selectedYear = document.getElementById('yearSelect').value;
     if (!confirm(`確定要刪除【${selectedYear}】的所有管道設定資料嗎？此操作不可復原！`)) return;
@@ -525,7 +515,6 @@
     }
   }
 
-  // 儲存設定
   async function saveConfig() {
     const saveBtn = document.getElementById('saveBtn');
     const statusMsg = document.getElementById('statusMsg');
