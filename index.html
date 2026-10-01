@@ -14,7 +14,7 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     }
     .login-container {
-      max-width: 480px;
+      max-width: 500px;
       margin: 0 auto;
       background: #ffffff;
       padding: 35px;
@@ -91,17 +91,25 @@
 
 <div class="container">
 
-  <!-- 階段一：學生登入頁面 -->
+  <!-- 階段一：學生登入與管道選擇頁面 -->
   <div id="loginSection" class="login-container">
     <div class="text-center mb-4">
       <h3 class="text-primary fw-bold">高雄高商學生升學報名</h3>
-      <p class="text-muted small">請輸入您的「學號」與「身分證字號」進行身份驗證</p>
+      <p class="text-muted small">請選擇「報名管道」並輸入「學號」與「身分證字號」進行驗證</p>
     </div>
 
     <form id="loginForm" onsubmit="handleLogin(event)">
+      <!-- 新增：登入頁面的管道選擇 -->
+      <div class="mb-3">
+        <label class="form-label fw-bold" for="loginExamType">報名管道 <span class="text-danger">*</span></label>
+        <select class="form-select form-select-lg" id="loginExamType" required disabled>
+          <option value="">-- 正在載入開放中管道... --</option>
+        </select>
+      </div>
+
       <div class="mb-3">
         <label class="form-label fw-bold" for="loginStudentId">學號 <span class="text-danger">*</span></label>
-        <input type="text" class="form-control form-control-lg" id="loginStudentId" placeholder="例如：110001" required autofocus>
+        <input type="text" class="form-control form-control-lg" id="loginStudentId" placeholder="例如：110001" required>
       </div>
 
       <div class="mb-4">
@@ -109,7 +117,7 @@
         <input type="text" class="form-control form-control-lg text-uppercase" id="loginNationalId" placeholder="例如：A123456789" maxlength="10" required oninput="this.value = this.value.toUpperCase()">
       </div>
 
-      <button type="submit" class="btn btn-primary w-100 btn-lg fw-bold py-2" id="loginBtn">登入系統</button>
+      <button type="submit" class="btn btn-primary w-100 btn-lg fw-bold py-2" id="loginBtn">登入系統 / 開始報名</button>
     </form>
 
     <div id="loginMessage" class="mt-3"></div>
@@ -121,7 +129,7 @@
     
     <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
       <h3 class="text-primary fw-bold mb-0">學生升學報名系統</h3>
-      <span class="year-badge" id="academicYearDisplay">載入中...</span>
+      <span class="year-badge" id="academicYearDisplay">開放報名中</span>
     </div>
 
     <div class="user-info-banner d-flex justify-content-between align-items-center mb-3">
@@ -137,7 +145,7 @@
         <span class="fs-4 me-2">📌</span>
         <div>
           <strong>找到您過往的報名紀錄！</strong>
-          <div class="small text-muted">已自動載入您上次報名所填寫的管道、考科與聯絡資料。您可以直接修訂後覆蓋送出。</div>
+          <div class="small text-muted">已自動載入您上次填寫的管道細項與基本資料，您可以修訂後覆蓋送出。</div>
         </div>
       </div>
     </div>
@@ -147,9 +155,9 @@
       <!-- 一、選擇管道 -->
       <div class="section-title">一、選擇報名管道</div>
       <div class="mb-4">
-        <label class="form-label fw-bold" for="examTypeSelect">請選擇欲報名的升學管道 <span class="text-danger">*</span></label>
-        <select class="form-select form-select-lg" name="examType" id="examTypeSelect" onchange="handleExamTypeChange(this)" required disabled>
-          <option value="">-- 正在載入開放中管道... --</option>
+        <label class="form-label fw-bold" for="examTypeSelect">報名管道 <span class="text-danger">*</span></label>
+        <select class="form-select form-select-lg" name="examType" id="examTypeSelect" onchange="handleExamTypeChange(this.value)" required>
+          <option value="">-- 請選擇報名管道 --</option>
         </select>
       </div>
 
@@ -242,7 +250,7 @@
           <label class="form-label fw-bold" id="photoLabel">選擇大頭照照片 <span class="text-danger" id="photoRequiredMark">*</span></label>
           <input type="file" class="form-control" id="photoFile" accept="image/jpeg, image/png" onchange="previewPhoto(this)">
           <div class="form-text mt-2">
-            <div>建議檔案格式：JPG、PNG，大小限制在 4MB 以內。</div>
+            <div>建議格式：JPG、PNG，檔案限制 4MB 以內。</div>
             <div id="photoEditNotice" class="text-primary fw-bold mt-1" style="display:none;">ℹ️ 修改模式：如不重新上傳照片，將自動保留過往已上傳的大頭照。</div>
           </div>
         </div>
@@ -264,7 +272,7 @@
 
 </div>
 
-<!-- Google Apps Script 後端部署網址 -->
+<!-- Google Apps Script 後端網址 -->
 <script>
   const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycby0CNwZEKY7GIPm58gX_VLeMbTFThsgdNtCYQmdH2q1j-FRd4dL59lGTfA_i1CFVhWR3Q/exec"; 
 
@@ -272,14 +280,63 @@
   let existingRegistrationData = null;
   let isEditMode = false;
 
+  // 網頁開啟時，第一時間載入開放的報名管道
+  document.addEventListener("DOMContentLoaded", function() {
+    fetchOpenChannels();
+  });
+
+  // 載入開放管道清單
+  async function fetchOpenChannels() {
+    const loginSelect = document.getElementById('loginExamType');
+    const formSelect = document.getElementById('examTypeSelect');
+
+    try {
+      const response = await fetch(GAS_WEB_APP_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'getOpenChannels' })
+      });
+      const res = await response.json();
+
+      if (res.status === 'success') {
+        if (res.academicYear) {
+          document.getElementById('academicYearDisplay').innerText = res.academicYear;
+        }
+
+        let optionsHtml = '<option value="">-- 請選擇報名管道 --</option>';
+        if (Array.isArray(res.channels) && res.channels.length > 0) {
+          res.channels.forEach(ch => {
+            optionsHtml += `<option value="${ch}">${ch}</option>`;
+          });
+        }
+
+        loginSelect.innerHTML = optionsHtml;
+        formSelect.innerHTML = optionsHtml;
+
+        loginSelect.disabled = false;
+      } else {
+        loginSelect.innerHTML = '<option value="">-- 無法取得管道清單 --</option>';
+      }
+    } catch (err) {
+      console.error(err);
+      loginSelect.innerHTML = '<option value="">-- 連線失敗，請重新整理 --</option>';
+    }
+  }
+
   // 登入驗證處理
   async function handleLogin(e) {
     e.preventDefault();
     
+    const selectedChannel = document.getElementById('loginExamType').value;
     const studentId = document.getElementById('loginStudentId').value.trim();
     const nationalId = document.getElementById('loginNationalId').value.trim().toUpperCase();
     const loginBtn = document.getElementById('loginBtn');
     const messageElem = document.getElementById('loginMessage');
+
+    if (!selectedChannel) {
+      alert("請先選擇報名管道！");
+      return;
+    }
 
     loginBtn.disabled = true;
     loginBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>驗證中...';
@@ -292,7 +349,8 @@
         body: JSON.stringify({
           action: 'verifyStudent',
           studentId: studentId,
-          nationalId: nationalId
+          nationalId: nationalId,
+          examType: selectedChannel
         })
       });
 
@@ -303,7 +361,11 @@
         existingRegistrationData = res.existingRegistration || null;
         isEditMode = !!existingRegistrationData;
 
-        // 設定相片必填狀態與修訂提示
+        // 設定正式表單中的管道選擇值
+        const formSelect = document.getElementById('examTypeSelect');
+        formSelect.value = selectedChannel;
+
+        // 相片欄位設定
         const photoFileInput = document.getElementById('photoFile');
         const photoReqMark = document.getElementById('photoRequiredMark');
         const photoNotice = document.getElementById('photoEditNotice');
@@ -315,7 +377,7 @@
           document.getElementById('existingRegistrationNotice').style.display = 'block';
           document.getElementById('submitBtn').innerText = '更新 / 修改報名資料';
 
-          // 載入上次上傳的大頭照網址預覽
+          // 預覽過往大頭照
           const photoUrl = existingRegistrationData.photoUrl || existingRegistrationData['照片連結'];
           if (photoUrl) {
             const previewImg = document.getElementById('photoPreviewImg');
@@ -331,27 +393,30 @@
           document.getElementById('submitBtn').innerText = '確認送出報名';
         }
 
+        // 填入學生基本資料
         populateStudentForm(currentStudentData, existingRegistrationData);
+
+        // 渲染對應管道的細項欄位（如學測 6 科核取方塊）
+        const savedDetails = existingRegistrationData ? (existingRegistrationData.examDetails || existingRegistrationData) : null;
+        handleExamTypeChange(selectedChannel, savedDetails);
 
         document.getElementById('loggedInUserInfo').innerText = `👤 登入者：${currentStudentData.studentName || ''}（學號：${studentId}）`;
         document.getElementById('loginSection').style.display = 'none';
         document.getElementById('registrationSection').style.display = 'block';
 
-        await loadOpenChannels(existingRegistrationData);
-
       } else {
-        messageElem.innerHTML = `<div class="alert alert-danger py-2 text-center">✕ ${res.message || '登入失敗！請確認學號與身分證字號。'}</div>`;
+        messageElem.innerHTML = `<div class="alert alert-danger py-2 text-center">✕ ${res.message || '登入失敗！請檢查學號與身分證字號。'}</div>`;
       }
     } catch (err) {
       console.error(err);
       messageElem.innerHTML = `<div class="alert alert-danger py-2 text-center">✕ 連線失敗，請檢查網路狀態。</div>`;
     } finally {
       loginBtn.disabled = false;
-      loginBtn.innerHTML = '登入系統';
+      loginBtn.innerHTML = '登入系統 / 開始報名';
     }
   }
 
-  // 自動填入學生資料
+  // 自動填入學生基本資料
   function populateStudentForm(master, existing) {
     const data = existing || master;
     if (!data) return;
@@ -373,74 +438,9 @@
     formatZipCode(document.getElementsByName('zipCode')[0]);
   }
 
-  // 登出 / 切換帳號
-  function handleLogout() {
-    if (confirm("確定要登出系統嗎？")) {
-      location.reload();
-    }
-  }
-
-  // 座號自動補零 (2碼)
-  function formatSeatNo(input) {
-    let val = input.value.trim();
-    if (val && !isNaN(val)) input.value = val.padStart(2, '0');
-  }
-
-  // 郵遞區號自動補零 (3碼)
-  function formatZipCode(input) {
-    let val = input.value.trim();
-    if (val && !isNaN(val)) input.value = val.padStart(3, '0');
-  }
-
-  // 同戶籍地址勾選邏輯
-  function copyResidenceAddress(checkbox) {
-    if (checkbox.checked) {
-      document.getElementById('mailingAddress').value = document.getElementById('residenceAddress').value;
-    }
-  }
-
-  // 當修改戶籍地址時同步更新通訊地址
-  function syncAddressIfChecked() {
-    if (document.getElementById('sameAsResidence').checked) {
-      document.getElementById('mailingAddress').value = document.getElementById('residenceAddress').value;
-    }
-  }
-
-  // 照片即時預覽與大小驗證
-  function previewPhoto(input) {
-    const previewImg = document.getElementById('photoPreviewImg');
-    const placeholder = document.getElementById('previewPlaceholder');
-
-    if (input.files && input.files[0]) {
-      const file = input.files[0];
-      if (file.size > 4 * 1024 * 1024) {
-        alert("照片檔案請勿超過 4MB！");
-        input.value = '';
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = e => {
-        previewImg.src = e.target.result;
-        previewImg.style.display = 'block';
-        placeholder.style.display = 'none';
-      }
-      reader.readAsDataURL(file);
-    }
-  }
-
-  // 日期格式化為 YYYY-MM-DD
-  function formatDateForInput(dateStr) {
-    if (!dateStr) return '';
-    const d = new Date(dateStr);
-    if (!isNaN(d.getTime())) {
-      return d.toISOString().split('T')[0];
-    }
-    return dateStr;
-  }
-
-  // 切換報名管道時動態產生考科欄位
-  function handleExamTypeChange(selectElem, savedDetails = null) {
-    const val = selectElem.value ? selectElem.value.trim() : "";
+  // 渲染考試管道細項欄位（學測選考 / 統測群類）
+  function handleExamTypeChange(examTypeValue, savedDetails = null) {
+    const val = examTypeValue ? examTypeValue.trim() : "";
     const section = document.getElementById('dynamicExamSection');
     const container = document.getElementById('dynamicFieldsContainer');
 
@@ -452,29 +452,32 @@
 
     section.style.display = 'block';
 
+    // 判斷是否為「學測」或「GSAT」
     if (/學測|GSAT/i.test(val)) {
       container.innerHTML = `
         <label class="form-label fw-bold mb-2">學測選考科目 <span class="text-danger">*</span></label>
-        <div class="d-flex flex-wrap gap-3">
-          <div class="form-check me-2"><input class="form-check-input" type="checkbox" id="gsat_Chinese"><label class="form-check-label fw-bold" for="gsat_Chinese">國文</label></div>
-          <div class="form-check me-2"><input class="form-check-input" type="checkbox" id="gsat_English"><label class="form-check-label fw-bold" for="gsat_English">英文</label></div>
-          <div class="form-check me-2"><input class="form-check-input" type="checkbox" id="gsat_MathA"><label class="form-check-label fw-bold" for="gsat_MathA">數學A</label></div>
-          <div class="form-check me-2"><input class="form-check-input" type="checkbox" id="gsat_MathB"><label class="form-check-label fw-bold" for="gsat_MathB">數學B</label></div>
-          <div class="form-check me-2"><input class="form-check-input" type="checkbox" id="gsat_Science"><label class="form-check-label fw-bold" for="gsat_Science">自然</label></div>
-          <div class="form-check me-2"><input class="form-check-input" type="checkbox" id="gsat_Society"><label class="form-check-label fw-bold" for="gsat_Society">社會</label></div>
+        <div class="row g-2">
+          <div class="col-6 col-sm-4"><div class="form-check"><input class="form-check-input" type="checkbox" id="gsat_Chinese"><label class="form-check-label fw-bold" for="gsat_Chinese">國文</label></div></div>
+          <div class="col-6 col-sm-4"><div class="form-check"><input class="form-check-input" type="checkbox" id="gsat_English"><label class="form-check-label fw-bold" for="gsat_English">英文</label></div></div>
+          <div class="col-6 col-sm-4"><div class="form-check"><input class="form-check-input" type="checkbox" id="gsat_MathA"><label class="form-check-label fw-bold" for="gsat_MathA">數學A</label></div></div>
+          <div class="col-6 col-sm-4"><div class="form-check"><input class="form-check-input" type="checkbox" id="gsat_MathB"><label class="form-check-label fw-bold" for="gsat_MathB">數學B</label></div></div>
+          <div class="col-6 col-sm-4"><div class="form-check"><input class="form-check-input" type="checkbox" id="gsat_Science"><label class="form-check-label fw-bold" for="gsat_Science">自然</label></div></div>
+          <div class="col-6 col-sm-4"><div class="form-check"><input class="form-check-input" type="checkbox" id="gsat_Society"><label class="form-check-label fw-bold" for="gsat_Society">社會</label></div></div>
         </div>
       `;
 
       if (savedDetails) {
-        const isTrue = v => v === 1 || v === "1" || v === true;
-        if (document.getElementById('gsat_Chinese')) document.getElementById('gsat_Chinese').checked = isTrue(savedDetails.gsat_Chinese || savedDetails['國文']);
-        if (document.getElementById('gsat_English')) document.getElementById('gsat_English').checked = isTrue(savedDetails.gsat_English || savedDetails['英文']);
-        if (document.getElementById('gsat_MathA')) document.getElementById('gsat_MathA').checked = isTrue(savedDetails.gsat_MathA || savedDetails['數學A']);
-        if (document.getElementById('gsat_MathB')) document.getElementById('gsat_MathB').checked = isTrue(savedDetails.gsat_MathB || savedDetails['數學B']);
-        if (document.getElementById('gsat_Science')) document.getElementById('gsat_Science').checked = isTrue(savedDetails.gsat_Science || savedDetails['自然']);
-        if (document.getElementById('gsat_Society')) document.getElementById('gsat_Society').checked = isTrue(savedDetails.gsat_Society || savedDetails['社會']);
+        const isTrue = v => v === 1 || v === "1" || v === true || v === "true";
+        if (document.getElementById('gsat_Chinese')) document.getElementById('gsat_Chinese').checked = isTrue(savedDetails.gsat_Chinese ?? savedDetails['國文']);
+        if (document.getElementById('gsat_English')) document.getElementById('gsat_English').checked = isTrue(savedDetails.gsat_English ?? savedDetails['英文']);
+        if (document.getElementById('gsat_MathA')) document.getElementById('gsat_MathA').checked = isTrue(savedDetails.gsat_MathA ?? savedDetails['數學A']);
+        if (document.getElementById('gsat_MathB')) document.getElementById('gsat_MathB').checked = isTrue(savedDetails.gsat_MathB ?? savedDetails['數學B']);
+        if (document.getElementById('gsat_Science')) document.getElementById('gsat_Science').checked = isTrue(savedDetails.gsat_Science ?? savedDetails['自然']);
+        if (document.getElementById('gsat_Society')) document.getElementById('gsat_Society').checked = isTrue(savedDetails.gsat_Society ?? savedDetails['社會']);
       }
-    } else if (/統測|TVE/i.test(val)) {
+    } 
+    // 判斷是否為「統測」或「TVE」
+    else if (/統測|TVE/i.test(val)) {
       container.innerHTML = `
         <div class="row g-3">
           <div class="col-md-6">
@@ -492,10 +495,12 @@
         if (document.getElementById('tveCluster')) document.getElementById('tveCluster').value = savedDetails.tveCluster || savedDetails['統測群類'] || '';
         if (document.getElementById('tveMath')) document.getElementById('tveMath').value = savedDetails.tveMath || savedDetails['統測數學'] || '';
       }
-    } else {
+    } 
+    // 其他管道
+    else {
       container.innerHTML = `
         <label class="form-label fw-bold" for="customNote">備註 / 管道說明</label>
-        <input type="text" class="form-control" id="customNote" placeholder="如有其他特殊備註事項請在此說明">
+        <input type="text" class="form-control" id="customNote" placeholder="如有其他特殊說明請在此填寫">
       `;
       if (savedDetails && document.getElementById('customNote')) {
         document.getElementById('customNote').value = savedDetails.customNote || savedDetails['備註'] || '';
@@ -503,46 +508,72 @@
     }
   }
 
-  // 載入目前開放報名的管道清單
-  async function loadOpenChannels(savedRegData = null) {
-    const selectElem = document.getElementById('examTypeSelect');
-    
-    try {
-      const response = await fetch(GAS_WEB_APP_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'getOpenChannels' })
-      });
-      const res = await response.json();
-
-      if (res.status === 'success') {
-        document.getElementById('academicYearDisplay').innerText = res.academicYear || '開放報名中';
-        selectElem.innerHTML = '<option value="">-- 請選擇報名管道 --</option>';
-
-        if (Array.isArray(res.channels)) {
-          res.channels.forEach(ch => {
-            const opt = document.createElement('option');
-            opt.value = ch;
-            opt.innerText = ch;
-            selectElem.appendChild(opt);
-          });
-        }
-
-        selectElem.disabled = false;
-
-        if (savedRegData && (savedRegData.examType || savedRegData['報名管道'])) {
-          const savedType = savedRegData.examType || savedRegData['報名管道'];
-          selectElem.value = savedType;
-          handleExamTypeChange(selectElem, savedRegData.examDetails || savedRegData);
-        }
-      }
-    } catch (err) {
-      console.error(err);
-      alert("載入開放管道失敗，請重新整理頁面！");
+  // 切換帳號 / 重新登入
+  function handleLogout() {
+    if (confirm("確定要登出並切換帳號嗎？")) {
+      location.reload();
     }
   }
 
-  // 讀取相片檔轉換為 Base64
+  // 座號自動補零 (2碼)
+  function formatSeatNo(input) {
+    let val = input.value.trim();
+    if (val && !isNaN(val)) input.value = val.padStart(2, '0');
+  }
+
+  // 郵遞區號自動補零 (3碼)
+  function formatZipCode(input) {
+    let val = input.value.trim();
+    if (val && !isNaN(val)) input.value = val.padStart(3, '0');
+  }
+
+  // 勾選同戶籍地址
+  function copyResidenceAddress(checkbox) {
+    if (checkbox.checked) {
+      document.getElementById('mailingAddress').value = document.getElementById('residenceAddress').value;
+    }
+  }
+
+  // 變更戶籍地址時同步更新通訊地址
+  function syncAddressIfChecked() {
+    if (document.getElementById('sameAsResidence').checked) {
+      document.getElementById('mailingAddress').value = document.getElementById('residenceAddress').value;
+    }
+  }
+
+  // 相片預覽與檔案大小檢查
+  function previewPhoto(input) {
+    const previewImg = document.getElementById('photoPreviewImg');
+    const placeholder = document.getElementById('previewPlaceholder');
+
+    if (input.files && input.files[0]) {
+      const file = input.files[0];
+      if (file.size > 4 * 1024 * 1024) {
+        alert("相片檔案大小請勿超過 4MB！");
+        input.value = '';
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = e => {
+        previewImg.src = e.target.result;
+        previewImg.style.display = 'block';
+        placeholder.style.display = 'none';
+      }
+      reader.readAsDataURL(file);
+    }
+  }
+
+  // 日期格式轉為 YYYY-MM-DD
+  function formatDateForInput(dateStr) {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    if (!isNaN(d.getTime())) {
+      return d.toISOString().split('T')[0];
+    }
+    return dateStr;
+  }
+
+  // 將圖片讀取為 Base64 字串
   function readFileAsBase64(file) {
     return new Promise((resolve, reject) => {
       if (!file) resolve(null);
@@ -553,7 +584,7 @@
     });
   }
 
-  // 報名表單送出
+  // 表單送出處置
   async function handleFormSubmit(e) {
     e.preventDefault();
     
@@ -562,7 +593,7 @@
     const examType = document.getElementById('examTypeSelect').value;
     const photoFile = document.getElementById('photoFile').files[0];
 
-    // 如果是學測管道，前端驗證是否至少選擇一科
+    // 學學測管道防呆：驗證是否至少選擇一科
     if (/學測|GSAT/i.test(examType)) {
       const hasChecked = ['gsat_Chinese', 'gsat_English', 'gsat_MathA', 'gsat_MathB', 'gsat_Science', 'gsat_Society']
         .some(id => document.getElementById(id) && document.getElementById(id).checked);
@@ -580,7 +611,7 @@
     let gsat_Society = document.getElementById('gsat_Society') && document.getElementById('gsat_Society').checked ? 1 : 0;
 
     submitBtn.disabled = true;
-    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>資料傳送上傳中，請稍候...';
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>資料處理與上傳中，請稍候...';
     statusMessage.innerHTML = '';
 
     try {
@@ -629,7 +660,7 @@
         statusMessage.innerHTML = `<div class="alert alert-success text-center fs-5 shadow-sm">🎉 ${result.message || '報名資料上傳成功！'}</div>`;
         window.scrollTo({ top: 0, behavior: 'smooth' });
       } else {
-        statusMessage.innerHTML = `<div class="alert alert-danger py-2">✕ ${result.message || '報名失敗，請檢查填寫資料。'}</div>`;
+        statusMessage.innerHTML = `<div class="alert alert-danger py-2">✕ ${result.message || '報名失敗，請檢查資料。'}</div>`;
       }
 
     } catch (err) {
@@ -644,7 +675,6 @@
 
 </body>
 </html>
-
 <template>
 <!DOCTYPE html>
 <html lang="zh-TW">
