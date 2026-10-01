@@ -172,7 +172,7 @@
       </div>
 
       <!-- 三、學生基本資料 -->
-      <div class="section-title">三、學生基本資料 <span class="text-muted fs-6 fw-normal">（部分個人欄位已自動帶入且不可修改）</span></div>
+      <div class="section-title">三、學生基本資料 <span class="text-muted fs-6 fw-normal">（個人固定欄位已自動鎖定）</span></div>
       <div class="row g-3 mb-4">
         
         <div class="col-md-4">
@@ -284,37 +284,37 @@
   let existingRegistrationData = null;
   let isEditMode = false;
 
-  // 網頁開啟時，自動讀取目前開放的管道清單
   document.addEventListener("DOMContentLoaded", function() {
     fetchOpenChannels();
   });
 
-  // 1. 自動清理物件 Key 的前後空格
-  function normalizeObject(obj) {
-    if (!obj || typeof obj !== 'object') return {};
-    const cleanObj = {};
-    Object.keys(obj).forEach(key => {
-      if (key !== undefined && key !== null) {
-        cleanObj[String(key).trim()] = obj[key];
+  // 1. 超強容錯的屬性值比對函式（移除空格、符號、大小寫差異）
+  function getPropValue(obj, ...keys) {
+    if (!obj || typeof obj !== 'object') return '';
+
+    // 將傳入物件的所有 Key 進行正規化 (移除空白、底線、破折號，並轉小寫)
+    const normMap = {};
+    Object.keys(obj).forEach(k => {
+      if (k !== undefined && k !== null) {
+        const cleanKey = String(k).replace(/[\s_\-\uFEFF\xA0]/g, '').toLowerCase();
+        normMap[cleanKey] = obj[k];
       }
     });
-    return cleanObj;
-  }
 
-  // 2. 從物件中安全尋找多個可能 key 的非空值 (支援去空格與模糊比對)
-  function getPropValue(obj, ...keys) {
-    if (!obj) return '';
-    const cleanObj = normalizeObject(obj);
+    // 依序搜尋可能的比對名稱
     for (let key of keys) {
-      const cleanKey = String(key).trim();
-      if (cleanObj[cleanKey] !== undefined && cleanObj[cleanKey] !== null && String(cleanObj[cleanKey]).trim() !== '') {
-        return String(cleanObj[cleanKey]).trim();
+      const cleanSearchKey = String(key).replace(/[\s_\-\uFEFF\xA0]/g, '').toLowerCase();
+      if (normMap[cleanSearchKey] !== undefined && normMap[cleanSearchKey] !== null) {
+        const val = String(normMap[cleanSearchKey]).trim();
+        if (val !== '' && val !== 'null' && val !== 'undefined') {
+          return val;
+        }
       }
     }
     return '';
   }
 
-  // 3. 智慧型考科勾選判斷
+  // 2. 智慧型考科勾選判斷
   function checkSubjectStatus(detailsObj, keywords) {
     if (!detailsObj || typeof detailsObj !== 'object') return false;
 
@@ -334,20 +334,6 @@
         }
       }
     }
-
-    for (let key of Object.keys(detailsObj)) {
-      const cleanKey = String(key).toLowerCase().replace(/[^a-z0-9\u4e00-\u9fa5]/g, '');
-      for (let kw of keywords) {
-        const cleanKw = String(kw).toLowerCase().replace(/[^a-z0-9\u4e00-\u9fa5]/g, '');
-        if (cleanKw && (cleanKey.includes(cleanKw) || cleanKw.includes(cleanKey))) {
-          const val = String(detailsObj[key]).trim().toLowerCase();
-          if (['1', 'true', 'v', 'y', 'yes', '是', 'o', 'checked'].includes(val) || Number(val) > 0) {
-            return true;
-          }
-        }
-      }
-    }
-
     return false;
   }
 
@@ -428,7 +414,7 @@
         document.getElementById('currentExamTypeDisplay').innerText = selectedChannel;
         document.getElementById('examTypeInput').value = selectedChannel;
 
-        // 相片欄位必填與修改提示設定
+        // 相片欄位與提示設定
         const photoFileInput = document.getElementById('photoFile');
         const photoReqMark = document.getElementById('photoRequiredMark');
         const photoNotice = document.getElementById('photoEditNotice');
@@ -440,7 +426,6 @@
           document.getElementById('existingRegistrationNotice').style.display = 'block';
           document.getElementById('submitBtn').innerText = '更新 / 修改報名資料';
 
-          // 載入與預覽過往已上傳的大頭照
           const photoUrl = getPropValue(existingRegistrationData, 'photoUrl', '照片連結', '大頭照', '照片', '大頭照連結', '相片');
           if (photoUrl) {
             const previewImg = document.getElementById('photoPreviewImg');
@@ -456,10 +441,10 @@
           document.getElementById('submitBtn').innerText = '確認送出報名';
         }
 
-        // 自動填入學生基本資料，並設定 6 個核心欄位為唯讀
+        // 自動填入學生基本資料與過往修改紀錄
         populateStudentForm(currentStudentData, existingRegistrationData);
 
-        // 根據選定的管道，展開「第二區塊：考科細項」並帶入過往選擇
+        // 展開「第二區塊：考科細項」並帶入過往選擇
         handleExamTypeChange(selectedChannel, existingRegistrationData);
 
         document.getElementById('loggedInUserInfo').innerText = `👤 登入者：${currentStudentData.studentName || getPropValue(currentStudentData, '姓名', '學生姓名')}（學號：${studentId}）`;
@@ -478,7 +463,7 @@
     }
   }
 
-  // 自動填入學生基本資料，並將指定 6 個欄位鎖定為唯讀
+  // 自動填入學生基本資料，優先讀取過往紀錄 (existing)，其次讀取主檔 (master)
   function populateStudentForm(master, existing) {
     const getValue = (...keys) => {
       const valFromExisting = getPropValue(existing, ...keys);
@@ -486,35 +471,35 @@
       return getPropValue(master, ...keys);
     };
 
+    // 🔒 1. 鎖定區：前 6 個欄位
     document.getElementsByName('studentClass')[0].value = getValue('studentClass', '班級', '班級/科別', '科別');
     document.getElementsByName('seatNo')[0].value = getValue('seatNo', '座號');
     document.getElementsByName('studentName')[0].value = getValue('studentName', '姓名', '學生姓名');
     document.getElementsByName('gender')[0].value = getValue('gender', '性別');
     document.getElementsByName('nationalId')[0].value = getValue('nationalId', '身分證字號', '身分證', '身分證號');
     document.getElementsByName('birthday')[0].value = formatDateForInput(getValue('birthday', '生日', '出生年月日', '出生日期'));
-    
-    // 可修改欄位
-    document.getElementsByName('residenceAddress')[0].value = getValue('residenceAddress', '戶籍地址', '戶籍地', '住址', '地址', '戶籍地址(含鄰里)');
-    document.getElementsByName('zipCode')[0].value = getValue('zipCode', '郵遞區號', '郵遞區', '區號');
-    document.getElementsByName('mailingAddress')[0].value = getValue('mailingAddress', '通訊地址', '聯絡地址', '通訊處');
-    document.getElementsByName('studentPhone')[0].value = getValue('studentPhone', '學生手機', '手機', '學生電話', '電話', '聯絡電話');
-    document.getElementsByName('emergencyContact')[0].value = getValue('emergencyContact', '緊急聯絡人', '緊急聯絡人姓名', '聯絡人', '家長姓名', '監護人');
-    document.getElementsByName('emergencyPhone')[0].value = getValue('emergencyPhone', '緊急聯絡人電話', '緊急聯絡電話', '緊急電話', '聯絡人電話', '家長電話', '監護人電話');
+
+    // ✏️️ 2. 可修改區：後 6 個欄位（擴充多元別名匹配）
+    document.getElementsByName('residenceAddress')[0].value = getValue('residenceAddress', 'residence_address', '戶籍地址', '戶籍地', '住址', '地址', '戶籍地址(含鄰里)');
+    document.getElementsByName('zipCode')[0].value = getValue('zipCode', 'zipcode', 'zip_code', '郵遞區號', '郵遞區', '區號', '郵編');
+    document.getElementsByName('mailingAddress')[0].value = getValue('mailingAddress', 'mailingaddress', 'mailing_address', '通訊地址', '聯絡地址', '通訊處', '居住地址');
+    document.getElementsByName('studentPhone')[0].value = getValue('studentPhone', 'studentphone', 'student_phone', '學生手機', '手機', '學生電話', '電話', '聯絡電話', '行動電話');
+    document.getElementsByName('emergencyContact')[0].value = getValue('emergencyContact', 'emergencycontact', 'emergency_contact', '緊急聯絡人', '緊急聯絡人姓名', '聯絡人', '家長姓名', '監護人');
+    document.getElementsByName('emergencyPhone')[0].value = getValue('emergencyPhone', 'emergencyphone', 'emergency_phone', '緊急聯絡人電話', '緊急聯絡電話', '緊急電話', '聯絡人電話', '家長電話', '監護人電話');
 
     formatSeatNo(document.getElementsByName('seatNo')[0]);
     formatZipCode(document.getElementsByName('zipCode')[0]);
 
-    // 🔒【設定 6 個個人基本欄位為唯讀 / 不可修改】
+    // 設定前 6 個個人基本欄位為唯讀
     const readOnlyFields = ['studentClass', 'seatNo', 'studentName', 'nationalId', 'birthday'];
     readOnlyFields.forEach(fieldName => {
       const el = document.getElementsByName(fieldName)[0];
       if (el) {
         el.readOnly = true;
-        el.classList.add('bg-light'); // 套用灰色背景視覺效果
+        el.classList.add('bg-light');
       }
     });
 
-    // 性別為 Select 選單，需設定 disabled (前端 JSON 仍可取值)
     const genderEl = document.getElementsByName('gender')[0];
     if (genderEl) {
       genderEl.disabled = true;
@@ -619,42 +604,36 @@
     }
   }
 
-  // 切換帳號 / 重新登入
   function handleLogout() {
     if (confirm("確定要登出並切換帳號嗎？")) {
       location.reload();
     }
   }
 
-  // 座號自動補零 (2碼)
   function formatSeatNo(input) {
     if (!input) return;
     let val = input.value.trim();
     if (val && !isNaN(val)) input.value = val.padStart(2, '0');
   }
 
-  // 郵遞區號自動補零 (3碼)
   function formatZipCode(input) {
     if (!input) return;
     let val = input.value.trim();
     if (val && !isNaN(val)) input.value = val.padStart(3, '0');
   }
 
-  // 勾選同戶籍地址
   function copyResidenceAddress(checkbox) {
     if (checkbox.checked) {
       document.getElementById('mailingAddress').value = document.getElementById('residenceAddress').value;
     }
   }
 
-  // 變更戶籍地址時同步更新通訊地址
   function syncAddressIfChecked() {
     if (document.getElementById('sameAsResidence').checked) {
       document.getElementById('mailingAddress').value = document.getElementById('residenceAddress').value;
     }
   }
 
-  // 相片預覽與檔案大小檢查
   function previewPhoto(input) {
     const previewImg = document.getElementById('photoPreviewImg');
     const placeholder = document.getElementById('previewPlaceholder');
@@ -676,7 +655,6 @@
     }
   }
 
-  // 日期格式轉 YYYY-MM-DD
   function formatDateForInput(dateStr) {
     if (!dateStr) return '';
     dateStr = String(dateStr).trim();
@@ -708,7 +686,6 @@
     return dateStr;
   }
 
-  // 將圖片檔案轉換為 Base64
   function readFileAsBase64(file) {
     return new Promise((resolve, reject) => {
       if (!file) resolve(null);
@@ -719,7 +696,6 @@
     });
   }
 
-  // 表單送出處置
   async function handleFormSubmit(e) {
     e.preventDefault();
     
