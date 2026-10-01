@@ -302,6 +302,7 @@
       const res = await response.json();
 
       if (res.status === 'success') {
+        console.log("【除錯資訊】GAS 回傳的舊紀錄原始資料：", res.existingRegistration);
         if (res.academicYear) {
           document.getElementById('academicYearDisplay').innerText = res.academicYear;
         }
