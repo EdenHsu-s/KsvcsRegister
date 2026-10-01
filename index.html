@@ -289,6 +289,31 @@
     fetchOpenChannels();
   });
 
+  // 1. 自動清理物件 Key 的前後空格
+  function normalizeObject(obj) {
+    if (!obj || typeof obj !== 'object') return {};
+    const cleanObj = {};
+    Object.keys(obj).forEach(key => {
+      if (key !== undefined && key !== null) {
+        cleanObj[String(key).trim()] = obj[key];
+      }
+    });
+    return cleanObj;
+  }
+
+  // 2. 從物件中安全尋找多個可能 key 的非空值 (支援去空格與模糊比對)
+  function getPropValue(obj, ...keys) {
+    if (!obj) return '';
+    const cleanObj = normalizeObject(obj);
+    for (let key of keys) {
+      const cleanKey = String(key).trim();
+      if (cleanObj[cleanKey] !== undefined && cleanObj[cleanKey] !== null && String(cleanObj[cleanKey]).trim() !== '') {
+        return String(cleanObj[cleanKey]).trim();
+      }
+    }
+    return '';
+  }
+
   // 向 GAS 後端取得開放中的報名管道
   async function fetchOpenChannels() {
     const loginSelect = document.getElementById('loginExamType');
@@ -302,7 +327,6 @@
       const res = await response.json();
 
       if (res.status === 'success') {
-        console.log("【除錯資訊】GAS 回傳的舊紀錄原始資料：", res.existingRegistration);
         if (res.academicYear) {
           document.getElementById('academicYearDisplay').innerText = res.academicYear;
         }
@@ -363,6 +387,9 @@
         existingRegistrationData = res.existingRegistration || null;
         isEditMode = !!existingRegistrationData;
 
+        // 【除錯資訊】在 Console 印出回傳的過往紀錄資料
+        console.log("【除錯資訊】GAS 回傳的舊紀錄原始資料：", existingRegistrationData);
+
         // 設定表單第一區塊「唯讀顯示管道」
         document.getElementById('currentExamTypeDisplay').innerText = selectedChannel;
         document.getElementById('examTypeInput').value = selectedChannel;
@@ -380,7 +407,7 @@
           document.getElementById('submitBtn').innerText = '更新 / 修改報名資料';
 
           // 載入與預覽過往已上傳的大頭照
-          const photoUrl = existingRegistrationData.photoUrl || existingRegistrationData['照片連結'] || existingRegistrationData['大頭照'] || existingRegistrationData['照片'];
+          const photoUrl = getPropValue(existingRegistrationData, 'photoUrl', '照片連結', '大頭照', '照片', '大頭照連結', '相片');
           if (photoUrl) {
             const previewImg = document.getElementById('photoPreviewImg');
             previewImg.src = photoUrl;
@@ -417,17 +444,6 @@
     }
   }
 
-  // 從物件中安全尋找多個可能 key 的非空值
-  function getPropValue(obj, ...keys) {
-    if (!obj) return '';
-    for (let key of keys) {
-      if (obj[key] !== undefined && obj[key] !== null && String(obj[key]).trim() !== '') {
-        return String(obj[key]).trim();
-      }
-    }
-    return '';
-  }
-
   // 自動填入學生基本資料 (優先從過往紀錄提取，若無才拿學生名冊資料補足)
   function populateStudentForm(master, existing) {
     const getValue = (...keys) => {
@@ -442,14 +458,14 @@
     document.getElementsByName('seatNo')[0].value = getValue('seatNo', '座號');
     document.getElementsByName('studentName')[0].value = getValue('studentName', '姓名');
     document.getElementsByName('gender')[0].value = getValue('gender', '性別');
-    document.getElementsByName('nationalId')[0].value = getValue('nationalId', '身分證字號', '身分證');
-    document.getElementsByName('birthday')[0].value = formatDateForInput(getValue('birthday', '生日', '出生年月日'));
-    document.getElementsByName('residenceAddress')[0].value = getValue('residenceAddress', '戶籍地址', '住址', '地址');
+    document.getElementsByName('nationalId')[0].value = getValue('nationalId', '身分證字號', '身分證', '身分證號');
+    document.getElementsByName('birthday')[0].value = formatDateForInput(getValue('birthday', '生日', '出生年月日', '出生日期'));
+    document.getElementsByName('residenceAddress')[0].value = getValue('residenceAddress', '戶籍地址', '戶籍地', '住址', '地址');
     document.getElementsByName('zipCode')[0].value = getValue('zipCode', '郵遞區號', '郵遞區');
     document.getElementsByName('mailingAddress')[0].value = getValue('mailingAddress', '通訊地址', '聯絡地址');
     document.getElementsByName('studentPhone')[0].value = getValue('studentPhone', '學生手機', '手機', '學生電話', '電話', '聯絡電話');
-    document.getElementsByName('emergencyContact')[0].value = getValue('emergencyContact', '緊急聯絡人', '聯絡人');
-    document.getElementsByName('emergencyPhone')[0].value = getValue('emergencyPhone', '緊急聯絡人電話', '緊急聯絡電話', '緊急電話', '聯絡人電話');
+    document.getElementsByName('emergencyContact')[0].value = getValue('emergencyContact', '緊急聯絡人', '緊急聯絡人姓名', '聯絡人', '家長姓名');
+    document.getElementsByName('emergencyPhone')[0].value = getValue('emergencyPhone', '緊急聯絡人電話', '緊急聯絡電話', '緊急電話', '聯絡人電話', '家長電話');
 
     formatSeatNo(document.getElementsByName('seatNo')[0]);
     formatZipCode(document.getElementsByName('zipCode')[0]);
@@ -484,23 +500,28 @@
       `;
 
       if (savedDetails) {
-        const details = savedDetails.examDetails || savedDetails;
+        const rawDetails = savedDetails.examDetails || savedDetails;
+        const details = normalizeObject(rawDetails);
         
-        // 寬鬆的勾選狀態判定機制
-        const isValueChecked = (v) => {
-          if (v === undefined || v === null) return false;
-          if (typeof v === 'boolean') return v;
-          if (typeof v === 'number') return v > 0;
-          const str = String(v).trim().toLowerCase();
-          return str !== '' && str !== '0' && str !== 'false' && str !== '否' && str !== 'no';
+        // 超強寬鬆的勾選狀態判定機制
+        const isValueChecked = (...keys) => {
+          for (let key of keys) {
+            const v = details[key];
+            if (v === undefined || v === null) continue;
+            if (typeof v === 'boolean') return v;
+            if (typeof v === 'number') return v > 0;
+            const str = String(v).trim().toLowerCase();
+            if (str !== '' && str !== '0' && str !== 'false' && str !== '否' && str !== 'no') return true;
+          }
+          return false;
         };
 
-        if (document.getElementById('gsat_Chinese')) document.getElementById('gsat_Chinese').checked = isValueChecked(details.gsat_Chinese ?? details['國文'] ?? details['國文科']);
-        if (document.getElementById('gsat_English')) document.getElementById('gsat_English').checked = isValueChecked(details.gsat_English ?? details['英文'] ?? details['英文科']);
-        if (document.getElementById('gsat_MathA')) document.getElementById('gsat_MathA').checked = isValueChecked(details.gsat_MathA ?? details['數學A']);
-        if (document.getElementById('gsat_MathB')) document.getElementById('gsat_MathB').checked = isValueChecked(details.gsat_MathB ?? details['數學B']);
-        if (document.getElementById('gsat_Science')) document.getElementById('gsat_Science').checked = isValueChecked(details.gsat_Science ?? details['自然'] ?? details['自然科']);
-        if (document.getElementById('gsat_Society')) document.getElementById('gsat_Society').checked = isValueChecked(details.gsat_Society ?? details['社會'] ?? details['社會科']);
+        if (document.getElementById('gsat_Chinese')) document.getElementById('gsat_Chinese').checked = isValueChecked('gsat_Chinese', '國文', '國文科', '國');
+        if (document.getElementById('gsat_English')) document.getElementById('gsat_English').checked = isValueChecked('gsat_English', '英文', '英文科', '英');
+        if (document.getElementById('gsat_MathA')) document.getElementById('gsat_MathA').checked = isValueChecked('gsat_MathA', '數學A', '數A');
+        if (document.getElementById('gsat_MathB')) document.getElementById('gsat_MathB').checked = isValueChecked('gsat_MathB', '數學B', '數B');
+        if (document.getElementById('gsat_Science')) document.getElementById('gsat_Science').checked = isValueChecked('gsat_Science', '自然', '自然科', '自');
+        if (document.getElementById('gsat_Society')) document.getElementById('gsat_Society').checked = isValueChecked('gsat_Society', '社會', '社會科', '社');
       }
     } 
     // 包含「統測」、「統一入學測驗」或「TVE」皆觸發
@@ -519,9 +540,9 @@
       `;
 
       if (savedDetails) {
-        const details = savedDetails.examDetails || savedDetails;
-        if (document.getElementById('tveCluster')) document.getElementById('tveCluster').value = details.tveCluster || details['統測群類'] || details['報考群類'] || details['群類'] || '';
-        if (document.getElementById('tveMath')) document.getElementById('tveMath').value = details.tveMath || details['統測數學'] || details['數學類別'] || '';
+        const rawDetails = savedDetails.examDetails || savedDetails;
+        if (document.getElementById('tveCluster')) document.getElementById('tveCluster').value = getPropValue(rawDetails, 'tveCluster', '統測群類', '報考群類', '群類', '類別');
+        if (document.getElementById('tveMath')) document.getElementById('tveMath').value = getPropValue(rawDetails, 'tveMath', '統測數學', '數學類別', '統測數學考卷類別', '數學');
       }
     } 
     // 其他升學管道
@@ -531,8 +552,8 @@
         <input type="text" class="form-control" id="customNote" placeholder="如有其他特殊說明請在此填寫">
       `;
       if (savedDetails) {
-        const details = savedDetails.examDetails || savedDetails;
-        if (document.getElementById('customNote')) document.getElementById('customNote').value = details.customNote || details['備註'] || details['說明'] || '';
+        const rawDetails = savedDetails.examDetails || savedDetails;
+        if (document.getElementById('customNote')) document.getElementById('customNote').value = getPropValue(rawDetails, 'customNote', '備註', '說明', '管道說明');
       }
     }
   }
