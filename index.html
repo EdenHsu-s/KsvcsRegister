@@ -22,9 +22,7 @@
 
 <div class="container">
 
-  <!-- ================================================================= -->
-  <!-- 階段一：學生登入頁面 (預設顯示) -->
-  <!-- ================================================================= -->
+  <!-- 階段一：學生登入頁面 -->
   <div id="loginSection" class="login-container">
     <div class="text-center mb-4">
       <h3 class="text-primary fw-bold">高雄高商學生升學報名</h3>
@@ -49,18 +47,14 @@
   </div>
 
 
-  <!-- ================================================================= -->
-  <!-- 階段二：正式報名表單頁面 (登入成功後顯示) -->
-  <!-- ================================================================= -->
+  <!-- 階段二：正式報名表單頁面 -->
   <div id="registrationSection" class="form-container" style="display: none;">
     
-    <!-- 頂端標題與學年度顯示 -->
     <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
       <h3 class="text-primary fw-bold mb-0">學生升學報名系統</h3>
       <span class="year-badge" id="academicYearDisplay">載入中...</span>
     </div>
 
-    <!-- 已登入學生資訊條 -->
     <div class="user-info-banner d-flex justify-content-between align-items-center mb-3">
       <div>
         <span class="text-primary fw-bold fs-6" id="loggedInUserInfo">登入者：驗證中...</span>
@@ -68,13 +62,13 @@
       <button type="button" class="btn btn-outline-secondary btn-sm" onclick="handleLogout()">切換帳號 / 重新登入</button>
     </div>
 
-    <!-- 已有報名資料提醒 Banner -->
+    <!-- 舊紀錄提示 -->
     <div id="existingRegistrationNotice" style="display: none;" class="alert alert-warning border-warning shadow-sm mb-4">
       <div class="d-flex align-items-center">
         <span class="fs-4 me-2">📌</span>
         <div>
-          <strong>您之前已完成報名！</strong>
-          <div class="small text-muted">下表已自動載入您上次報名填寫的內容，您可以直接修改資料後重新送出更新。</div>
+          <strong>找到您過往的報名紀錄！</strong>
+          <div class="small text-muted">已自動載入您上次報名說填寫的管道、考科與聯絡資料。您可以直接修訂後覆蓋送出。</div>
         </div>
       </div>
     </div>
@@ -88,40 +82,33 @@
         <select class="form-select form-select-lg" name="examType" id="examTypeSelect" onchange="handleExamTypeChange(this)" required disabled>
           <option value="">-- 正在載入開放中管道... --</option>
         </select>
-        <div class="form-text text-muted" id="channelNotice">如果無法選擇，代表目前該管道尚未開放報名。</div>
       </div>
 
       <!-- 二、動態考試科目區域 -->
       <div id="dynamicExamSection" class="mb-4" style="display:none;">
         <div class="section-title">二、考試科目與管道細項</div>
-        <div class="exam-box" id="dynamicFieldsContainer">
-          <!-- 由 JavaScript 動態插入欄位 -->
-        </div>
+        <div class="exam-box" id="dynamicFieldsContainer"></div>
       </div>
 
       <!-- 三、學生基本資料 -->
       <div class="section-title">三、學生基本資料</div>
       <div class="row g-3 mb-4">
         
-        <!-- 1. 班級 -->
         <div class="col-md-4">
           <label class="form-label fw-bold"><span class="field-num">1</span>班級 <span class="text-danger">*</span></label>
-          <input type="text" class="form-control" name="studentClass" required placeholder="例如：301">
+          <input type="text" class="form-control" name="studentClass" required>
         </div>
 
-        <!-- 2. 座號 -->
         <div class="col-md-4">
           <label class="form-label fw-bold"><span class="field-num">2</span>座號 (兩碼) <span class="text-danger">*</span></label>
-          <input type="text" class="form-control" name="seatNo" maxlength="2" required placeholder="例如：01" onblur="formatSeatNo(this)">
+          <input type="text" class="form-control" name="seatNo" maxlength="2" required onblur="formatSeatNo(this)">
         </div>
 
-        <!-- 3. 姓名 -->
         <div class="col-md-4">
           <label class="form-label fw-bold"><span class="field-num">3</span>姓名 <span class="text-danger">*</span></label>
-          <input type="text" class="form-control" name="studentName" required placeholder="例如：王小明">
+          <input type="text" class="form-control" name="studentName" required>
         </div>
 
-        <!-- 4. 性別 -->
         <div class="col-md-4">
           <label class="form-label fw-bold"><span class="field-num">4</span>性別 <span class="text-danger">*</span></label>
           <select class="form-select" name="gender" required>
@@ -131,31 +118,26 @@
           </select>
         </div>
 
-        <!-- 5. 身分證 -->
         <div class="col-md-4">
           <label class="form-label fw-bold"><span class="field-num">5</span>身分證字號 <span class="text-danger">*</span></label>
-          <input type="text" class="form-control text-uppercase" name="nationalId" required maxlength="10" placeholder="例如：A123456789" oninput="this.value = this.value.toUpperCase()">
+          <input type="text" class="form-control text-uppercase" name="nationalId" required maxlength="10" oninput="this.value = this.value.toUpperCase()">
         </div>
 
-        <!-- 6. 生日 -->
         <div class="col-md-4">
           <label class="form-label fw-bold"><span class="field-num">6</span>生日 <span class="text-danger">*</span></label>
           <input type="date" class="form-control" name="birthday" required>
         </div>
 
-        <!-- 7. 戶籍地址 -->
         <div class="col-12">
           <label class="form-label fw-bold"><span class="field-num">7</span>戶籍地址 <span class="text-danger">*</span></label>
-          <input type="text" class="form-control" name="residenceAddress" id="residenceAddress" required placeholder="請填寫完整戶籍地址" oninput="syncAddressIfChecked()">
+          <input type="text" class="form-control" name="residenceAddress" id="residenceAddress" required oninput="syncAddressIfChecked()">
         </div>
 
-        <!-- 8. 通訊地址郵遞區號(三碼) -->
         <div class="col-md-4">
           <label class="form-label fw-bold"><span class="field-num">8</span>郵遞區號 (3碼) <span class="text-danger">*</span></label>
-          <input type="text" class="form-control" name="zipCode" maxlength="3" required placeholder="例如：802" onblur="formatZipCode(this)">
+          <input type="text" class="form-control" name="zipCode" maxlength="3" required onblur="formatZipCode(this)">
         </div>
 
-        <!-- 9. 通訊地址 -->
         <div class="col-md-8">
           <div class="d-flex justify-content-between align-items-center mb-1">
             <label class="form-label fw-bold mb-0"><span class="field-num">9</span>通訊地址 <span class="text-danger">*</span></label>
@@ -164,45 +146,40 @@
               <label class="form-check-label text-muted fw-bold" for="sameAsResidence">同戶籍地址</label>
             </div>
           </div>
-          <input type="text" class="form-control" name="mailingAddress" id="mailingAddress" required placeholder="請填寫完整通訊地址">
+          <input type="text" class="form-control" name="mailingAddress" id="mailingAddress" required>
         </div>
 
-        <!-- 10. 學生手機 -->
         <div class="col-md-4">
           <label class="form-label fw-bold"><span class="field-num">10</span>學生手機 <span class="text-danger">*</span></label>
-          <input type="tel" class="form-control" name="studentPhone" required placeholder="例如：0912345678">
+          <input type="tel" class="form-control" name="studentPhone" required>
         </div>
 
-        <!-- 11. 緊急聯絡人 -->
         <div class="col-md-4">
           <label class="form-label fw-bold"><span class="field-num">11</span>緊急聯絡人 <span class="text-danger">*</span></label>
-          <input type="text" class="form-control" name="emergencyContact" required placeholder="例如：王大明 (父親)">
+          <input type="text" class="form-control" name="emergencyContact" required>
         </div>
 
-        <!-- 12. 緊急聯絡人電話 -->
         <div class="col-md-4">
           <label class="form-label fw-bold"><span class="field-num">12</span>緊急聯絡人電話 <span class="text-danger">*</span></label>
-          <input type="tel" class="form-control" name="emergencyPhone" required placeholder="例如：0987654321">
+          <input type="tel" class="form-control" name="emergencyPhone" required>
         </div>
 
       </div>
 
       <!-- 四、上傳相片檔 -->
-      <div class="section-title">四、上傳相片檔</div>
+      <div class="section-title">四、大頭照電子檔</div>
       <div class="row g-3 mb-4 align-items-center">
         <div class="col-md-8">
-          <label class="form-label fw-bold" id="photoLabel">大頭照電子檔 <span class="text-danger" id="photoRequiredMark">*</span></label>
+          <label class="form-label fw-bold" id="photoLabel">選擇大頭照照片 <span class="text-danger" id="photoRequiredMark">*</span></label>
           <input type="file" class="form-control" id="photoFile" accept="image/jpeg, image/png" onchange="previewPhoto(this)">
           <div class="form-text mt-2">
-            <div>• 系統將自動另存檔名為：<code>身分證字號.jpg</code></div>
-            <div>• 檔案大小請控制在 <strong>4MB</strong> 以內。</div>
-            <div id="photoEditNotice" class="text-primary fw-bold mt-1" style="display:none;">ℹ️ 修改模式提示：如不重新上傳，將自動保留過往已上傳的大頭照。</div>
+            <div id="photoEditNotice" class="text-primary fw-bold mt-1" style="display:none;">ℹ️ 修改模式：如不重新上傳照片，將自動保留過往已上傳的大頭照。</div>
           </div>
         </div>
         <div class="col-md-4 text-center">
           <div class="photo-preview mx-auto" id="photoPreviewContainer">
             <span class="text-muted small p-2" id="previewPlaceholder">照片預覽</span>
-            <img id="photoPreviewImg" src="" alt="預覽" style="display:none;">
+            <img id="photoPreviewImg" src="" alt="大頭照預覽" style="display:none;">
           </div>
         </div>
       </div>
@@ -218,17 +195,12 @@
 </div>
 
 <script>
-  // ==================================================================
-  // 【重要設定區】Apps Script 部署 URL
-  // ==================================================================
   const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycby0CNwZEKY7GIPm58gX_VLeMbTFThsgdNtCYQmdH2q1j-FRd4dL59lGTfA_i1CFVhWR3Q/exec"; 
-  // ==================================================================
 
   let currentStudentData = null;
   let existingRegistrationData = null;
   let isEditMode = false;
 
-  // 登入驗證處理
   async function handleLogin(e) {
     e.preventDefault();
     
@@ -237,13 +209,8 @@
     const loginBtn = document.getElementById('loginBtn');
     const messageElem = document.getElementById('loginMessage');
 
-    if (!studentId || !nationalId) {
-      messageElem.innerHTML = `<div class="alert alert-warning py-2 text-center">請輸入完整的「學號」與「身分證字號」！</div>`;
-      return;
-    }
-
     loginBtn.disabled = true;
-    loginBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>驗證登入中...';
+    loginBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>驗證中...';
     messageElem.innerHTML = '';
 
     try {
@@ -261,13 +228,10 @@
 
       if (res.status === 'success' && res.student) {
         currentStudentData = res.student;
-        
-        // 判斷是否有過往報名紀錄
-        const hasExisting = res.existingRegistration && Object.keys(res.existingRegistration).length > 0;
-        existingRegistrationData = hasExisting ? res.existingRegistration : null;
+        existingRegistrationData = res.existingRegistration || null;
         isEditMode = !!existingRegistrationData;
 
-        // 設定照片欄位是否必填與介面提示
+        // 介面與照片欄位狀態
         const photoFileInput = document.getElementById('photoFile');
         const photoReqMark = document.getElementById('photoRequiredMark');
         const photoNotice = document.getElementById('photoEditNotice');
@@ -278,6 +242,15 @@
           photoNotice.style.display = 'block';
           document.getElementById('existingRegistrationNotice').style.display = 'block';
           document.getElementById('submitBtn').innerText = '更新 / 修改報名資料';
+
+          // 載入上次上傳的大頭照網址預覽
+          const photoUrl = existingRegistrationData.photoUrl || existingRegistrationData['照片連結'];
+          if (photoUrl) {
+            const previewImg = document.getElementById('photoPreviewImg');
+            previewImg.src = photoUrl;
+            previewImg.style.display = 'block';
+            document.getElementById('previewPlaceholder').style.display = 'none';
+          }
         } else {
           photoFileInput.setAttribute('required', 'required');
           photoReqMark.style.display = 'inline';
@@ -286,96 +259,70 @@
           document.getElementById('submitBtn').innerText = '確認送出報名';
         }
 
-        // 帶入學生表單資料：有報名過抓報名資料，未報名過抓學生名冊
         populateStudentForm(currentStudentData, existingRegistrationData);
 
-        // 顯示目前登入者資訊條
         document.getElementById('loggedInUserInfo').innerText = `👤 登入者：${currentStudentData.studentName || ''}（學號：${studentId}）`;
-
-        // 切換頁面：隱藏登入頁，顯示報名表單頁
         document.getElementById('loginSection').style.display = 'none';
         document.getElementById('registrationSection').style.display = 'block';
 
-        // 載入開放中的報名管道並自動帶入舊的動態選擇欄位
         await loadOpenChannels(existingRegistrationData);
 
       } else {
-        messageElem.innerHTML = `<div class="alert alert-danger py-2 text-center">✕ ${res.message || '登入失敗，請確認學號與身分證字號！'}</div>`;
+        messageElem.innerHTML = `<div class="alert alert-danger py-2 text-center">✕ ${res.message || '登入失敗！'}</div>`;
       }
     } catch (err) {
-      messageElem.innerHTML = `<div class="alert alert-danger py-2 text-center">✕ 連線失敗，請檢查網路連線或稍後再試。</div>`;
+      messageElem.innerHTML = `<div class="alert alert-danger py-2 text-center">✕ 連線失敗，請檢查網路。</div>`;
     } finally {
       loginBtn.disabled = false;
       loginBtn.innerHTML = '登入系統';
     }
   }
 
-  // 填寫表單資料 (優先使用舊報名紀錄，次之使用學生名冊)
-  function populateStudentForm(studentMaster, existingReg) {
-    const hasRegistered = existingReg && Object.keys(existingReg).length > 0;
-    const sourceData = hasRegistered ? existingReg : studentMaster;
+  function populateStudentForm(master, existing) {
+    const data = existing || master;
+    if (!data) return;
 
-    if (!sourceData) return;
-
-    document.getElementsByName('studentClass')[0].value = sourceData.studentClass || studentMaster.studentClass || '';
-    document.getElementsByName('seatNo')[0].value = sourceData.seatNo || studentMaster.seatNo || '';
-    document.getElementsByName('studentName')[0].value = sourceData.studentName || studentMaster.studentName || '';
-    document.getElementsByName('gender')[0].value = sourceData.gender || studentMaster.gender || '';
-    document.getElementsByName('nationalId')[0].value = sourceData.nationalId || studentMaster.nationalId || '';
-    document.getElementsByName('birthday')[0].value = formatDateForInput(sourceData.birthday || studentMaster.birthday);
-    document.getElementsByName('residenceAddress')[0].value = sourceData.residenceAddress || studentMaster.residenceAddress || '';
-    document.getElementsByName('zipCode')[0].value = sourceData.zipCode || studentMaster.zipCode || '';
-    document.getElementsByName('mailingAddress')[0].value = sourceData.mailingAddress || studentMaster.mailingAddress || '';
-    document.getElementsByName('studentPhone')[0].value = sourceData.studentPhone || studentMaster.studentPhone || '';
-    document.getElementsByName('emergencyContact')[0].value = sourceData.emergencyContact || studentMaster.emergencyContact || '';
-    document.getElementsByName('emergencyPhone')[0].value = sourceData.emergencyPhone || studentMaster.emergencyPhone || '';
+    document.getElementsByName('studentClass')[0].value = data.studentClass || data['班級'] || master.studentClass || '';
+    document.getElementsByName('seatNo')[0].value = data.seatNo || data['座號'] || master.seatNo || '';
+    document.getElementsByName('studentName')[0].value = data.studentName || data['姓名'] || master.studentName || '';
+    document.getElementsByName('gender')[0].value = data.gender || data['性別'] || master.gender || '';
+    document.getElementsByName('nationalId')[0].value = data.nationalId || data['身分證字號'] || master.nationalId || '';
+    document.getElementsByName('birthday')[0].value = formatDateForInput(data.birthday || data['生日'] || master.birthday);
+    document.getElementsByName('residenceAddress')[0].value = data.residenceAddress || data['戶籍地址'] || master.residenceAddress || '';
+    document.getElementsByName('zipCode')[0].value = data.zipCode || data['郵遞區號'] || master.zipCode || '';
+    document.getElementsByName('mailingAddress')[0].value = data.mailingAddress || data['通訊地址'] || master.mailingAddress || '';
+    document.getElementsByName('studentPhone')[0].value = data.studentPhone || data['學生手機'] || master.studentPhone || '';
+    document.getElementsByName('emergencyContact')[0].value = data.emergencyContact || data['緊急聯絡人'] || master.emergencyContact || '';
+    document.getElementsByName('emergencyPhone')[0].value = data.emergencyPhone || data['緊急聯絡人電話'] || master.emergencyPhone || '';
 
     formatSeatNo(document.getElementsByName('seatNo')[0]);
     formatZipCode(document.getElementsByName('zipCode')[0]);
   }
 
-  // 登出 / 切換帳號
   function handleLogout() {
-    if (confirm("確定要登出並切換帳號嗎？現有未送出的填寫內容將會清空。")) {
-      currentStudentData = null;
-      existingRegistrationData = null;
-      isEditMode = false;
-
-      document.getElementById('registrationForm').reset();
-      document.getElementById('loginForm').reset();
-      document.getElementById('dynamicExamSection').style.display = 'none';
-      document.getElementById('photoPreviewImg').style.display = 'none';
-      document.getElementById('previewPlaceholder').style.display = 'block';
-      document.getElementById('statusMessage').innerHTML = '';
-      
-      // 切換回到登入畫面
-      document.getElementById('registrationSection').style.display = 'none';
-      document.getElementById('loginSection').style.display = 'block';
-      document.getElementById('loginMessage').innerHTML = '';
+    if (confirm("確定要登出嗎？")) {
+      location.reload();
     }
   }
 
   function formatSeatNo(input) {
     let val = input.value.trim();
-    if (val && !isNaN(val)) { input.value = val.padStart(2, '0'); }
+    if (val && !isNaN(val)) input.value = val.padStart(2, '0');
   }
 
   function formatZipCode(input) {
     let val = input.value.trim();
-    if (val && !isNaN(val)) { input.value = val.padStart(3, '0'); }
+    if (val && !isNaN(val)) input.value = val.padStart(3, '0');
   }
 
   function copyResidenceAddress(checkbox) {
-    const residence = document.getElementById('residenceAddress').value;
-    const mailingInput = document.getElementById('mailingAddress');
     if (checkbox.checked) {
-      mailingInput.value = residence;
+      document.getElementById('mailingAddress').value = document.getElementById('residenceAddress').value;
     }
   }
 
   function syncAddressIfChecked() {
-    const checkbox = document.getElementById('sameAsResidence');
-    if (checkbox.checked) {
+    if (document.getElementById('sameAsResidence').checked) {
       document.getElementById('mailingAddress').value = document.getElementById('residenceAddress').value;
     }
   }
@@ -387,46 +334,29 @@
     if (input.files && input.files[0]) {
       const file = input.files[0];
       if (file.size > 4 * 1024 * 1024) {
-        alert("選擇的照片檔案超過 4MB 限制，請重新選擇！");
+        alert("照片請小於 4MB！");
         input.value = '';
-        previewImg.style.display = 'none';
-        placeholder.style.display = 'block';
         return;
       }
       const reader = new FileReader();
-      reader.onload = function(e) {
+      reader.onload = e => {
         previewImg.src = e.target.result;
         previewImg.style.display = 'block';
         placeholder.style.display = 'none';
       }
       reader.readAsDataURL(file);
-    } else {
-      previewImg.style.display = 'none';
-      placeholder.style.display = 'block';
     }
   }
 
   function formatDateForInput(dateStr) {
     if (!dateStr) return '';
-    if (typeof dateStr === 'string') {
-      if (dateStr.includes('T')) {
-        dateStr = dateStr.split('T')[0];
-      }
-      if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-        return dateStr;
-      }
-    }
     const d = new Date(dateStr);
     if (!isNaN(d.getTime())) {
-      const year = d.getFullYear();
-      const month = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
+      return d.toISOString().split('T')[0];
     }
     return dateStr;
   }
 
-  // 切換報名管道時，動態渲染對應欄位
   function handleExamTypeChange(selectElem, savedDetails = null) {
     const val = selectElem.value ? selectElem.value.trim() : "";
     const section = document.getElementById('dynamicExamSection');
@@ -440,105 +370,56 @@
 
     section.style.display = 'block';
 
-    // 若 savedDetails 為 JSON 字串，自動解析
-    if (typeof savedDetails === 'string') {
-      try { savedDetails = JSON.parse(savedDetails); } catch(e) {}
-    }
-
-    if (/學測|學科能力|GSAT/i.test(val)) {
+    if (/學測|GSAT/i.test(val)) {
       container.innerHTML = `
         <label class="form-label fw-bold mb-2">學測選考科目 <span class="text-danger">*</span></label>
         <div class="d-flex flex-wrap gap-3">
-          <div class="form-check me-2"><input class="form-check-input gsat-subject" type="checkbox" id="gsat_Chinese" value="國文"><label class="form-check-label fw-bold" for="gsat_Chinese">國文</label></div>
-          <div class="form-check me-2"><input class="form-check-input gsat-subject" type="checkbox" id="gsat_English" value="英文"><label class="form-check-label fw-bold" for="gsat_English">英文</label></div>
-          <div class="form-check me-2"><input class="form-check-input gsat-subject" type="checkbox" id="gsat_MathA" value="數學A"><label class="form-check-label fw-bold" for="gsat_MathA">數學A</label></div>
-          <div class="form-check me-2"><input class="form-check-input gsat-subject" type="checkbox" id="gsat_MathB" value="數學B"><label class="form-check-label fw-bold" for="gsat_MathB">數學B</label></div>
-          <div class="form-check me-2"><input class="form-check-input gsat-subject" type="checkbox" id="gsat_Science" value="自然"><label class="form-check-label fw-bold" for="gsat_Science">自然</label></div>
-          <div class="form-check me-2"><input class="form-check-input gsat-subject" type="checkbox" id="gsat_Society" value="社會"><label class="form-check-label fw-bold" for="gsat_Society">社會</label></div>
+          <div class="form-check me-2"><input class="form-check-input" type="checkbox" id="gsat_Chinese"><label class="form-check-label fw-bold" for="gsat_Chinese">國文</label></div>
+          <div class="form-check me-2"><input class="form-check-input" type="checkbox" id="gsat_English"><label class="form-check-label fw-bold" for="gsat_English">英文</label></div>
+          <div class="form-check me-2"><input class="form-check-input" type="checkbox" id="gsat_MathA"><label class="form-check-label fw-bold" for="gsat_MathA">數學A</label></div>
+          <div class="form-check me-2"><input class="form-check-input" type="checkbox" id="gsat_MathB"><label class="form-check-label fw-bold" for="gsat_MathB">數學B</label></div>
+          <div class="form-check me-2"><input class="form-check-input" type="checkbox" id="gsat_Science"><label class="form-check-label fw-bold" for="gsat_Science">自然</label></div>
+          <div class="form-check me-2"><input class="form-check-input" type="checkbox" id="gsat_Society"><label class="form-check-label fw-bold" for="gsat_Society">社會</label></div>
         </div>
-        <div class="form-text text-muted mt-2">請勾選本次欲報考之學測科目（可複選）。系統將自動於後端試算表呈現各科目為 1 或 0。</div>
       `;
 
-      // 自動勾選舊紀錄
       if (savedDetails) {
-        const isChecked = (v) => v === 1 || v === "1" || v === true || String(v).toLowerCase() === "true";
-        if (document.getElementById('gsat_Chinese')) document.getElementById('gsat_Chinese').checked = isChecked(savedDetails.gsat_Chinese);
-        if (document.getElementById('gsat_English')) document.getElementById('gsat_English').checked = isChecked(savedDetails.gsat_English);
-        if (document.getElementById('gsat_MathA')) document.getElementById('gsat_MathA').checked = isChecked(savedDetails.gsat_MathA);
-        if (document.getElementById('gsat_MathB')) document.getElementById('gsat_MathB').checked = isChecked(savedDetails.gsat_MathB);
-        if (document.getElementById('gsat_Science')) document.getElementById('gsat_Science').checked = isChecked(savedDetails.gsat_Science);
-        if (document.getElementById('gsat_Society')) document.getElementById('gsat_Society').checked = isChecked(savedDetails.gsat_Society);
+        const isTrue = v => v === 1 || v === "1" || v === true;
+        if (document.getElementById('gsat_Chinese')) document.getElementById('gsat_Chinese').checked = isTrue(savedDetails.gsat_Chinese || savedDetails['國文']);
+        if (document.getElementById('gsat_English')) document.getElementById('gsat_English').checked = isTrue(savedDetails.gsat_English || savedDetails['英文']);
+        if (document.getElementById('gsat_MathA')) document.getElementById('gsat_MathA').checked = isTrue(savedDetails.gsat_MathA || savedDetails['數學A']);
+        if (document.getElementById('gsat_MathB')) document.getElementById('gsat_MathB').checked = isTrue(savedDetails.gsat_MathB || savedDetails['數學B']);
+        if (document.getElementById('gsat_Science')) document.getElementById('gsat_Science').checked = isTrue(savedDetails.gsat_Science || savedDetails['自然']);
+        if (document.getElementById('gsat_Society')) document.getElementById('gsat_Society').checked = isTrue(savedDetails.gsat_Society || savedDetails['社會']);
       }
-    } 
-    else if (/統測|四技二專|統一入學|TVE/i.test(val)) {
+    } else if (/統測|TVE/i.test(val)) {
       container.innerHTML = `
         <div class="row g-3">
           <div class="col-md-6">
             <label class="form-label fw-bold">報考群類 <span class="text-danger">*</span></label>
-            <select class="form-select" id="tveCluster" required>
-              <option value="">-- 請選擇統測群類 --</option>
-              <option value="01 機械群">01 機械群</option>
-              <option value="02 動力機械群">02 動力機械群</option>
-              <option value="03 電機與電子群電機類">03 電機與電子群電機類</option>
-              <option value="04 電機與電子群資電類">04 電機與電子群資電類</option>
-              <option value="05 化工群">05 化工群</option>
-              <option value="06 土木與建築群">06 土木與建築群</option>
-              <option value="07 設計群">07 設計群</option>
-              <option value="08 工程與管理類">08 工程與管理類</option>
-              <option value="09 食品群">09 食品群</option>
-              <option value="10 家政群幼保類">10 家政群幼保類</option>
-              <option value="11 家政群生活應用類">11 家政群生活應用類</option>
-              <option value="12 農業群">12 農業群</option>
-              <option value="13 外語群英語類">13 外語群英語類</option>
-              <option value="14 外語群日語類">14 外語群日語類</option>
-              <option value="15 餐旅群">15 餐旅群</option>
-              <option value="16 海事群">16 海事群</option>
-              <option value="17 水產群">17 水產群</option>
-              <option value="18 藝術群影視類">18 藝術群影視類</option>
-              <option value="19 商管外語群(商管類)">19 商管外語群(商管類)</option>
-              <option value="20 跨群/其他">20 跨群/其他</option>
-            </select>
+            <input type="text" class="form-control" id="tveCluster" placeholder="請輸入群類">
           </div>
           <div class="col-md-6">
             <label class="form-label fw-bold">統測數學考卷類別 <span class="text-danger">*</span></label>
-            <select class="form-select" id="tveMath" required>
-              <option value="">-- 請選擇數學類別 --</option>
-              <option value="數學(A)">數學(A) - 家政/幼保/藝術</option>
-              <option value="數學(B)">數學(B) - 商管/餐旅/外語</option>
-              <option value="數學(C)">數學(C) - 工業/農機/自然</option>
-              <option value="數學(S)">數學(S) - 特殊類別</option>
-              <option value="不考數學">不考數學</option>
-            </select>
-          </div>
-          <div class="col-12">
-            <label class="form-label fw-bold">共同與專業考科說明</label>
-            <input type="text" class="form-control" id="tveSubjects" value="國文、英文、專業科目(一)、專業科目(二)" readonly>
+            <input type="text" class="form-control" id="tveMath" placeholder="例如：數學(B)">
           </div>
         </div>
       `;
 
       if (savedDetails) {
-        if (savedDetails.tveCluster && document.getElementById('tveCluster')) document.getElementById('tveCluster').value = savedDetails.tveCluster;
-        if (savedDetails.tveMath && document.getElementById('tveMath')) document.getElementById('tveMath').value = savedDetails.tveMath;
+        if (document.getElementById('tveCluster')) document.getElementById('tveCluster').value = savedDetails.tveCluster || savedDetails['統測群類'] || '';
+        if (document.getElementById('tveMath')) document.getElementById('tveMath').value = savedDetails.tveMath || savedDetails['統測數學'] || '';
       }
-    } 
-    else {
-      container.innerHTML = `
-        <div class="mb-2">
-          <label class="form-label fw-bold">備註或特別說明事項 (選填)</label>
-          <input type="text" class="form-control" id="customNote" placeholder="如有特殊選報需求請在此填寫">
-        </div>
-      `;
-      if (savedDetails && savedDetails.customNote && document.getElementById('customNote')) {
-        document.getElementById('customNote').value = savedDetails.customNote;
+    } else {
+      container.innerHTML = `<input type="text" class="form-control" id="customNote" placeholder="備註">`;
+      if (savedDetails && document.getElementById('customNote')) {
+        document.getElementById('customNote').value = savedDetails.customNote || savedDetails['備註'] || '';
       }
     }
   }
 
-  // 動態載入開放中的管道
   async function loadOpenChannels(savedRegData = null) {
     const selectElem = document.getElementById('examTypeSelect');
-    const submitBtn = document.getElementById('submitBtn');
     
     try {
       const response = await fetch(GAS_WEB_APP_URL, {
@@ -549,14 +430,8 @@
       const res = await response.json();
 
       if (res.status === 'success') {
-        document.getElementById('academicYearDisplay').innerText = res.academicYear || '開放中';
+        document.getElementById('academicYearDisplay').innerText = res.academicYear;
         selectElem.innerHTML = '<option value="">-- 請選擇報名管道 --</option>';
-
-        if (!res.channels || res.channels.length === 0) {
-          selectElem.innerHTML = '<option value="">-- 目前暫無開放中的管道 --</option>';
-          document.getElementById('channelNotice').innerText = "提示：目前註冊組尚未開放任何報名管道。";
-          return;
-        }
 
         res.channels.forEach(ch => {
           const opt = document.createElement('option');
@@ -566,33 +441,21 @@
         });
 
         selectElem.disabled = false;
-        submitBtn.disabled = false;
 
-        // 若有舊報名紀錄，自動選擇對應管道並帶入舊選項
-        if (savedRegData && savedRegData.examType) {
-          const options = Array.from(selectElem.options);
-          const matchedOpt = options.find(opt => opt.value.trim() === savedRegData.examType.trim());
-          if (matchedOpt) {
-            selectElem.value = matchedOpt.value;
-          } else {
-            selectElem.value = savedRegData.examType;
-          }
+        if (savedRegData && (savedRegData.examType || savedRegData['報名管道'])) {
+          const savedType = savedRegData.examType || savedRegData['報名管道'];
+          selectElem.value = savedType;
           handleExamTypeChange(selectElem, savedRegData.examDetails || savedRegData);
         }
-
-      } else {
-        selectElem.innerHTML = '<option value="">-- 載入失敗 --</option>';
-        alert("管道資料載入失敗：" + (res.message || '無法讀取資料'));
       }
     } catch (err) {
-      selectElem.innerHTML = '<option value="">-- 連線失敗 --</option>';
-      alert("無法連線至伺服器，請檢查網路連線或稍後再試。");
+      alert("連線失敗！");
     }
   }
 
   function readFileAsBase64(file) {
     return new Promise((resolve, reject) => {
-      if (!file) { resolve(null); return; }
+      if (!file) resolve(null);
       const reader = new FileReader();
       reader.onload = () => resolve({ name: file.name, type: file.type, data: reader.result });
       reader.onerror = error => reject(error);
@@ -600,94 +463,41 @@
     });
   }
 
-  // 送出報名表單
   async function handleFormSubmit(e) {
     e.preventDefault();
     
     const submitBtn = document.getElementById('submitBtn');
     const statusMessage = document.getElementById('statusMessage');
-    const examType = document.getElementsByName('examType')[0].value;
+    const examType = document.getElementById('examTypeSelect').value;
     const photoFile = document.getElementById('photoFile').files[0];
 
-    // 新增時照片為必填；修改時照片為選填
-    if (!isEditMode && !photoFile) {
-      alert("請選擇並上傳大頭照電子檔！");
-      return;
-    }
-
-    if (photoFile && photoFile.size > 4 * 1024 * 1024) { 
-      alert("大頭照檔案過大！請控制在 4MB 以內。"); 
-      return; 
-    }
-
-    // 檢查 DOM 畫面實際渲染的管道類型
-    const isGsatForm = document.getElementById('gsat_Chinese') !== null;
-    const isTveForm = document.getElementById('tveCluster') !== null;
-
-    let examDetails = {};
-
-    if (isGsatForm || /學測|學科能力|GSAT/i.test(examType)) {
-      const getCheckVal = (id) => {
-        const elem = document.getElementById(id);
-        return (elem && elem.checked) ? 1 : 0;
-      };
-
-      examDetails = {
-        gsat_Chinese: getCheckVal('gsat_Chinese'),
-        gsat_English: getCheckVal('gsat_English'),
-        gsat_MathA: getCheckVal('gsat_MathA'),
-        gsat_MathB: getCheckVal('gsat_MathB'),
-        gsat_Science: getCheckVal('gsat_Science'),
-        gsat_Society: getCheckVal('gsat_Society')
-      };
-
-      const selectedCount = Object.values(examDetails).reduce((sum, val) => sum + val, 0);
-      if (selectedCount === 0) {
-        alert("請至少選擇一門【學測】選考科目！");
-        return;
-      }
-    } else if (isTveForm || /統測|四技二專|統一入學|TVE/i.test(examType)) {
-      const cluster = document.getElementById('tveCluster') ? document.getElementById('tveCluster').value : '';
-      const math = document.getElementById('tveMath') ? document.getElementById('tveMath').value : '';
-      if (!cluster || !math) {
-        alert("請完整選擇統測的【報考群類】與【數學類別】！");
-        return;
-      }
-      examDetails.tveCluster = cluster;
-      examDetails.tveMath = math;
-      examDetails.tveSubjects = document.getElementById('tveSubjects') ? document.getElementById('tveSubjects').value : '';
-    } else {
-      const noteElem = document.getElementById('customNote');
-      examDetails.customNote = noteElem ? noteElem.value : '';
-    }
+    let gsat_Chinese = document.getElementById('gsat_Chinese') && document.getElementById('gsat_Chinese').checked ? 1 : 0;
+    let gsat_English = document.getElementById('gsat_English') && document.getElementById('gsat_English').checked ? 1 : 0;
+    let gsat_MathA = document.getElementById('gsat_MathA') && document.getElementById('gsat_MathA').checked ? 1 : 0;
+    let gsat_MathB = document.getElementById('gsat_MathB') && document.getElementById('gsat_MathB').checked ? 1 : 0;
+    let gsat_Science = document.getElementById('gsat_Science') && document.getElementById('gsat_Science').checked ? 1 : 0;
+    let gsat_Society = document.getElementById('gsat_Society') && document.getElementById('gsat_Society').checked ? 1 : 0;
 
     submitBtn.disabled = true;
-    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>資料處理與傳輸中，請稍候...';
-    statusMessage.innerHTML = '';
+    submitBtn.innerText = '處理中...';
 
     try {
       const photoRes = photoFile ? await readFileAsBase64(photoFile) : null;
 
       const payload = {
         action: 'submitForm',
-        isEditMode: isEditMode,
-        studentId: currentStudentData ? currentStudentData.studentId : document.getElementById('loginStudentId').value.trim(),
+        studentId: currentStudentData.studentId,
         examType: examType,
-        examDetails: examDetails,
-        
-        // 攤平考科欄位，確保相容後端多種寫入邏輯
-        gsat_Chinese: examDetails.gsat_Chinese !== undefined ? examDetails.gsat_Chinese : 0,
-        gsat_English: examDetails.gsat_English !== undefined ? examDetails.gsat_English : 0,
-        gsat_MathA: examDetails.gsat_MathA !== undefined ? examDetails.gsat_MathA : 0,
-        gsat_MathB: examDetails.gsat_MathB !== undefined ? examDetails.gsat_MathB : 0,
-        gsat_Science: examDetails.gsat_Science !== undefined ? examDetails.gsat_Science : 0,
-        gsat_Society: examDetails.gsat_Society !== undefined ? examDetails.gsat_Society : 0,
-        tveCluster: examDetails.tveCluster || '',
-        tveMath: examDetails.tveMath || '',
-        tveSubjects: examDetails.tveSubjects || '',
-        customNote: examDetails.customNote || '',
+        gsat_Chinese: gsat_Chinese,
+        gsat_English: gsat_English,
+        gsat_MathA: gsat_MathA,
+        gsat_MathB: gsat_MathB,
+        gsat_Science: gsat_Science,
+        gsat_Society: gsat_Society,
+        tveCluster: document.getElementById('tveCluster') ? document.getElementById('tveCluster').value : '',
+        tveMath: document.getElementById('tveMath') ? document.getElementById('tveMath').value : '',
+        customNote: document.getElementById('customNote') ? document.getElementById('customNote').value : '',
 
-        // 基本資料
         studentClass: document.getElementsByName('studentClass')[0].value,
         seatNo: document.getElementsByName('seatNo')[0].value,
         studentName: document.getElementsByName('studentName')[0].value,
@@ -701,8 +511,6 @@
         emergencyContact: document.getElementsByName('emergencyContact')[0].value,
         emergencyPhone: document.getElementsByName('emergencyPhone')[0].value,
         
-        // 相片檔案
-        photoName: photoRes ? photoRes.name : '',
         photoType: photoRes ? photoRes.type : '',
         photoData: photoRes ? photoRes.data : ''
       };
@@ -716,14 +524,14 @@
       const result = await response.json();
 
       if (result.status === "success") {
-        statusMessage.innerHTML = `<div class="alert alert-success fs-5 text-center shadow-sm">🎉 ${result.message}</div>`;
+        statusMessage.innerHTML = `<div class="alert alert-success text-center">🎉 ${result.message}</div>`;
         window.scrollTo({ top: 0, behavior: 'smooth' });
       } else {
-        statusMessage.innerHTML = `<div class="alert alert-danger shadow-sm">✕ ${result.message}</div>`;
+        statusMessage.innerHTML = `<div class="alert alert-danger">✕ ${result.message}</div>`;
       }
 
     } catch (err) {
-      statusMessage.innerHTML = `<div class="alert alert-danger shadow-sm">✕ 傳送失敗：${err.message || err}</div>`;
+      statusMessage.innerHTML = `<div class="alert alert-danger">✕ 傳送失敗，請重試！</div>`;
     } finally {
       submitBtn.disabled = false;
       submitBtn.innerText = isEditMode ? '更新 / 修改報名資料' : '確認送出報名';
