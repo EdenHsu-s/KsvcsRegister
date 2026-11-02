@@ -22,7 +22,7 @@
       box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
     }
     .form-container {
-      max-width: 860px;
+      max-width: 880px;
       margin: 0 auto;
       background: #ffffff;
       padding: 35px;
@@ -229,18 +229,24 @@
           <input type="text" class="form-control" name="mailingAddress" id="mailingAddress" required>
         </div>
 
-        <div class="col-md-4">
-          <label class="form-label fw-bold"><span class="field-num">10</span>學生手機 <span class="text-danger">*</span></label>
-          <input type="tel" class="form-control" name="studentPhone" required>
+        <!-- 聯絡電話與緊急聯絡人 (四欄並排) -->
+        <div class="col-md-3">
+          <label class="form-label fw-bold"><span class="field-num">10</span>考生聯絡電話</label>
+          <input type="tel" class="form-control" name="studentTel" placeholder="例如：07-1234567">
         </div>
 
-        <div class="col-md-4">
-          <label class="form-label fw-bold"><span class="field-num">11</span>緊急聯絡人 <span class="text-danger">*</span></label>
+        <div class="col-md-3">
+          <label class="form-label fw-bold"><span class="field-num">11</span>考生手機 <span class="text-danger">*</span></label>
+          <input type="tel" class="form-control" name="studentPhone" required placeholder="例如：0912345678">
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label fw-bold"><span class="field-num">12</span>緊急聯絡人 <span class="text-danger">*</span></label>
           <input type="text" class="form-control" name="emergencyContact" required>
         </div>
 
-        <div class="col-md-4">
-          <label class="form-label fw-bold"><span class="field-num">12</span>緊急聯絡人電話 <span class="text-danger">*</span></label>
+        <div class="col-md-3">
+          <label class="form-label fw-bold"><span class="field-num">13</span>緊急聯絡人電話 <span class="text-danger">*</span></label>
           <input type="tel" class="form-control" name="emergencyPhone" required>
         </div>
 
@@ -282,13 +288,12 @@
   let currentStudentData = null;
   let existingRegistrationData = null;
   let isEditMode = false;
-  let channelDetailsMap = {}; // 儲存管道與 showDetails 顯隱狀態
+  let channelDetailsMap = {}; 
 
   document.addEventListener("DOMContentLoaded", function() {
     fetchOpenChannels();
   });
 
-  // 輔助函式：根據班級名稱自動對應畢業科系代碼 (301~304->251, 305~308->252, 309~312->253, 313~315->254, 316~317->308, 318->534)
   function getTveDeptCode(studentClass) {
     if (!studentClass) return "";
     const str = String(studentClass).trim();
@@ -304,7 +309,6 @@
     return "";
   }
 
-  // 輔助函式：將座號轉換為 3 位數靠左補 0 (例如: 1 -> "001")
   function formatSeatNo3(seatNo) {
     if (seatNo === undefined || seatNo === null || seatNo === "") return "000";
     const cleaned = String(seatNo).replace(/\D/g, '');
@@ -474,7 +478,6 @@
 
         populateStudentForm(currentStudentData, existingRegistrationData);
 
-        // 判斷該管道是否需顯示「二、考試科目與管道細項」
         let shouldShowDetails = true;
         if (res.showDetails !== undefined) {
           shouldShowDetails = res.showDetails;
@@ -531,7 +534,10 @@
     document.getElementsByName('residenceAddress')[0].value = getValue('residenceAddress', 'residence_address', 'residenceaddress', 'residence', '戶籍地址', '戶籍地', '住址', '地址', '戶籍地址(含鄰里)', '戶籍住址');
     document.getElementsByName('zipCode')[0].value = getValue('zipCode', 'zip_code', 'zipcode', 'zip', 'postalCode', 'postal_code', '郵遞區號', '郵遞區', '區號', '郵編', '郵政編碼');
     document.getElementsByName('mailingAddress')[0].value = getValue('mailingAddress', 'mailing_address', 'mailingaddress', 'contactAddress', 'contact_address', '通訊地址', '聯絡地址', '通訊處', '居住地址', '現居地址', '通訊住址');
-    document.getElementsByName('studentPhone')[0].value = getValue('studentPhone', 'student_phone', 'studentphone', 'phone', 'mobile', 'studentMobile', '學生手機', '手機', '學生電話', '電話', '聯絡電話', '行動電話', '學生行動電話');
+    
+    document.getElementsByName('studentTel')[0].value = getValue('studentTel', 'student_tel', 'studenttel', '考生聯絡電話', '聯絡電話', '市話', '電話', '考生電話');
+    document.getElementsByName('studentPhone')[0].value = getValue('studentPhone', 'student_phone', 'studentphone', 'phone', 'mobile', 'studentMobile', '學生手機', '手機', '行動電話', '學生行動電話');
+    
     document.getElementsByName('emergencyContact')[0].value = getValue('emergencyContact', 'emergency_contact', 'emergencycontact', 'contactPerson', 'contact_person', '緊急聯絡人', '緊急聯絡人姓名', '聯絡人', '家長姓名', '監護人', '緊急聯絡人1', '聯絡人姓名');
     document.getElementsByName('emergencyPhone')[0].value = getValue('emergencyPhone', 'emergency_phone', 'emergencyphone', 'emergencyContactPhone', '緊急聯絡人電話', '緊急聯絡電話', '緊急電話', '聯絡人電話', '家長電話', '監護人電話', '緊急聯絡人1電話');
 
@@ -554,7 +560,6 @@
     }
   }
 
-  // 116 統測選考防呆連動
   function validateTveSelection() {
     const clusterVal = document.getElementById('tveCluster') ? document.getElementById('tveCluster').value : '';
     const isCrossCluster = /^5[1-6]/.test(clusterVal);
@@ -563,7 +568,7 @@
     if (prof2Check) {
       if (isCrossCluster) {
         prof2Check.checked = true;
-        prof2Check.disabled = true; // 跨群類 51~56 專業科目(二) 為必考
+        prof2Check.disabled = true; 
       } else {
         prof2Check.disabled = false;
       }
@@ -629,7 +634,6 @@
       }
     } 
     else if (/統測|統一入學測驗|TVE/i.test(val)) {
-      // 取得預設欄位值 (116 統測載入檔規格 1~8 欄)
       const studentClassVal = currentStudentData ? currentStudentData.studentClass : (document.getElementsByName('studentClass')[0] ? document.getElementsByName('studentClass')[0].value : '');
       const seatNoVal = currentStudentData ? currentStudentData.seatNo : (document.getElementsByName('seatNo')[0] ? document.getElementsByName('seatNo')[0].value : '');
       const seatNo3Val = currentStudentData && currentStudentData.seatNo3 ? currentStudentData.seatNo3 : formatSeatNo3(seatNoVal);
@@ -647,7 +651,6 @@
           </div>
           <div class="card-body">
             
-            <!-- 【區塊一：學籍與預設基本資料（依範例檔 1~8 欄順序）】 -->
             <h6 class="text-primary fw-bold border-bottom pb-2 mb-3">一、學籍與預設報名資料 (範例檔 1~8 欄)</h6>
             <div class="row g-3 mb-4">
               <div class="col-md-3 col-6">
@@ -684,7 +687,6 @@
               </div>
             </div>
 
-            <!-- 【區塊二：考生報考意願與考區設定（依範例檔 21~23, 25 欄順序）】 -->
             <h6 class="text-primary fw-bold border-bottom pb-2 mb-3">二、報考意願與考區設定</h6>
             <div class="row g-3 mb-4">
               <div class="col-md-3">
@@ -710,18 +712,17 @@
                     <option value="05">05 化工群</option>
                     <option value="06">06 土木與建築群</option>
                     <option value="07">07 設計群</option>
-                    <option value="08">08 工程與管理類</option>
-                    <option value="09">09 商業與管理群</option>
-                    <option value="10">10 衛生與護理類</option>
-                    <option value="11">11 食品群</option>
-                    <option value="12">12 家政群幼保類</option>
-                    <option value="13">13 家政群生活應用類</option>
-                    <option value="14">14 農業群</option>
-                    <option value="15">15 外語群英語類</option>
-                    <option value="16">16 外語群日語群</option>
-                    <option value="17">17 餐旅群</option>
-                    <option value="18">18 海事群</option>
-                    <option value="19">19 水產群</option>
+                    <option value="09">09 家政群幼保類</option>
+                    <option value="10">10 家政群生活應用類</option>
+                    <option value="11">11 農業群</option>
+                    <option value="12">12 食品群</option>
+                    <option value="13">13 水產群</option>
+                    <option value="14">14 水產養殖群</option>
+                    <option value="15">15 航海群</option>
+                    <option value="16">16 商管群</option>
+                    <option value="17">17 外語群英語類</option>
+                    <option value="18">18 外語群日語類</option>
+                    <option value="19">19 餐旅群</option>
                     <option value="20">20 藝術群影視類</option>
                   </optgroup>
                   <optgroup label="跨群類 (代碼 51~56)">
@@ -730,7 +731,7 @@
                     <option value="53">53 商管外語群(一)</option>
                     <option value="54">54 商管外語群(二)</option>
                     <option value="55">55 商管外語群(三)</option>
-                    <option value="56">56 商管外語群(四)</option>
+                    <option value="56">56 水產航海群</option>
                   </optgroup>
                 </select>
               </div>
@@ -753,7 +754,6 @@
               </div>
             </div>
 
-            <!-- 【區塊三：考生身份與應考服務（依範例檔 19, 20, 26 欄順序）】 -->
             <h6 class="text-primary fw-bold border-bottom pb-2 mb-3">三、身分與應考服務調查</h6>
             <div class="row g-3 mb-4">
               <div class="col-md-4">
@@ -780,7 +780,6 @@
               </div>
             </div>
 
-            <!-- 【區塊四：116 自主選考科目（依範例檔 27~31 欄順序）】 -->
             <h6 class="text-primary fw-bold border-bottom pb-2 mb-3">四、116 自主選考科目設定 (範例檔 27~31 欄)</h6>
             <div class="alert alert-info py-2 small mb-3" id="tveRuleHint">
               📌 <b>選考規則提示</b>：單群類至少選考 2 科（且專業科目至少 1 科）；跨群類至少選考 3 科（且專業科目二為必考）。
@@ -964,7 +963,6 @@
     const photoFile = document.getElementById('photoFile').files[0];
     const dynamicExamSection = document.getElementById('dynamicExamSection');
 
-    // 學測選考檢核
     if (dynamicExamSection.style.display !== 'none' && /學測|學科能力測驗|GSAT/i.test(examType)) {
       const hasChecked = ['gsat_Chinese', 'gsat_English', 'gsat_MathA', 'gsat_MathB', 'gsat_Science', 'gsat_Society']
         .some(id => document.getElementById(id) && document.getElementById(id).checked);
@@ -974,7 +972,6 @@
       }
     }
 
-    // 116 統測選考防呆檢核
     if (dynamicExamSection.style.display !== 'none' && /統測|統一入學測驗|TVE/i.test(examType)) {
       const isApply = document.getElementById('tveIsApply') ? document.getElementById('tveIsApply').value : 'Y';
       if (isApply === 'Y') {
@@ -1041,7 +1038,6 @@
         gsat_Science: gsat_Science,
         gsat_Society: gsat_Society,
 
-        // 統測 116 集體報名與自主選考規格
         tveClassCode: document.getElementById('tveClassCode') ? document.getElementById('tveClassCode').value : (currentStudentData ? currentStudentData.studentClass : ''),
         tveSeqNo: document.getElementById('tveSeqNo') ? document.getElementById('tveSeqNo').value : (currentStudentData ? formatSeatNo3(currentStudentData.seatNo) : ''),
         tveGradStatus: document.getElementById('tveGradStatus') ? document.getElementById('tveGradStatus').value : '1',
@@ -1077,7 +1073,9 @@
         residenceAddress: document.getElementsByName('residenceAddress')[0].value.trim(),
         zipCode: document.getElementsByName('zipCode')[0].value.trim(),
         mailingAddress: document.getElementsByName('mailingAddress')[0].value.trim(),
-        studentPhone: document.getElementsByName('studentPhone')[0].value.trim(),
+        
+        studentTel: document.getElementsByName('studentTel')[0].value.trim(), 
+        studentPhone: document.getElementsByName('studentPhone')[0].value.trim(), 
         emergencyContact: document.getElementsByName('emergencyContact')[0].value.trim(),
         emergencyPhone: document.getElementsByName('emergencyPhone')[0].value.trim(),
         
