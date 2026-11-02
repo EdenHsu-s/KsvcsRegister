@@ -22,7 +22,7 @@
       box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
     }
     .form-container {
-      max-width: 840px;
+      max-width: 860px;
       margin: 0 auto;
       background: #ffffff;
       padding: 35px;
@@ -288,6 +288,29 @@
     fetchOpenChannels();
   });
 
+  // 輔助函式：根據班級名稱自動對應畢業科系代碼 (301~304->251, 305~308->252, 309~312->253, 313~315->254, 316~317->308, 318->534)
+  function getTveDeptCode(studentClass) {
+    if (!studentClass) return "";
+    const str = String(studentClass).trim();
+    const match = str.match(/\d{3}/) || str.match(/\d+/);
+    if (!match) return "";
+    const num = parseInt(match[0], 10);
+    if (num >= 301 && num <= 304) return "251";
+    if (num >= 305 && num <= 308) return "252";
+    if (num >= 309 && num <= 312) return "253";
+    if (num >= 313 && num <= 315) return "254";
+    if (num >= 316 && num <= 317) return "308";
+    if (num === 318) return "534";
+    return "";
+  }
+
+  // 輔助函式：將座號轉換為 3 位數靠左補 0 (例如: 1 -> "001")
+  function formatSeatNo3(seatNo) {
+    if (seatNo === undefined || seatNo === null || seatNo === "") return "000";
+    const cleaned = String(seatNo).replace(/\D/g, '');
+    return cleaned.padStart(3, '0');
+  }
+
   function getPropValue(obj, ...keys) {
     if (!obj || typeof obj !== 'object') return '';
 
@@ -531,6 +554,36 @@
     }
   }
 
+  // 116 統測選考防呆連動
+  function validateTveSelection() {
+    const clusterVal = document.getElementById('tveCluster') ? document.getElementById('tveCluster').value : '';
+    const isCrossCluster = /^5[1-6]/.test(clusterVal);
+
+    const prof2Check = document.getElementById('tve_Prof2');
+    if (prof2Check) {
+      if (isCrossCluster) {
+        prof2Check.checked = true;
+        prof2Check.disabled = true; // 跨群類 51~56 專業科目(二) 為必考
+      } else {
+        prof2Check.disabled = false;
+      }
+    }
+  }
+
+  function toggleTveOptions(isApplyVal) {
+    const isApply = isApplyVal === 'Y';
+    const fields = ['tveExamArea', 'tveCluster', 'tveAirCon', 'tveMath', 'tveDisabilityService', 'tveIncomeStatus', 'tvePregnancyService'];
+    fields.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.disabled = !isApply;
+    });
+    
+    document.querySelectorAll('.tve-sub-check').forEach(chk => {
+      chk.disabled = !isApply;
+    });
+    if (isApply) validateTveSelection();
+  }
+
   function handleExamTypeChange(examTypeValue, savedDetails = null) {
     const val = examTypeValue ? examTypeValue.trim() : "";
     const section = document.getElementById('dynamicExamSection');
@@ -576,15 +629,194 @@
       }
     } 
     else if (/統測|統一入學測驗|TVE/i.test(val)) {
+      // 取得預設欄位值 (116 統測載入檔規格 1~8 欄)
+      const studentClassVal = currentStudentData ? currentStudentData.studentClass : (document.getElementsByName('studentClass')[0] ? document.getElementsByName('studentClass')[0].value : '');
+      const seatNoVal = currentStudentData ? currentStudentData.seatNo : (document.getElementsByName('seatNo')[0] ? document.getElementsByName('seatNo')[0].value : '');
+      const seatNo3Val = currentStudentData && currentStudentData.seatNo3 ? currentStudentData.seatNo3 : formatSeatNo3(seatNoVal);
+      const gradStatusVal = currentStudentData && currentStudentData.tveGradStatus ? currentStudentData.tveGradStatus : "1";
+      const gradYmVal = currentStudentData && currentStudentData.tveGradYm ? currentStudentData.tveGradYm : "11506";
+      const schoolCodeVal = currentStudentData && currentStudentData.tveSchoolCode ? currentStudentData.tveSchoolCode : "726";
+      const schoolCatVal = currentStudentData && currentStudentData.tveSchoolCategory ? currentStudentData.tveSchoolCategory : "1";
+      const schoolAttrVal = currentStudentData && currentStudentData.tveSchoolAttribute ? currentStudentData.tveSchoolAttribute : "1";
+      const deptCodeVal = currentStudentData && currentStudentData.tveDeptCode ? currentStudentData.tveDeptCode : getTveDeptCode(studentClassVal);
+
       container.innerHTML = `
-        <div class="row g-3">
-          <div class="col-md-6">
-            <label class="form-label fw-bold" for="tveCluster">報考群類 <span class="text-danger">*</span></label>
-            <input type="text" class="form-control" id="tveCluster" placeholder="例如：商管群" required>
+        <div class="card border-primary mb-3">
+          <div class="card-header bg-primary text-white fw-bold">
+            📋 四技二專統測 - 116 學年度集體報名載入檔欄位
           </div>
-          <div class="col-md-6">
-            <label class="form-label fw-bold" for="tveMath">統測數學考卷類別 <span class="text-danger">*</span></label>
-            <input type="text" class="form-control" id="tveMath" placeholder="例如：數學(B)" required>
+          <div class="card-body">
+            
+            <!-- 【區塊一：學籍與預設基本資料（依範例檔 1~8 欄順序）】 -->
+            <h6 class="text-primary fw-bold border-bottom pb-2 mb-3">一、學籍與預設報名資料 (範例檔 1~8 欄)</h6>
+            <div class="row g-3 mb-4">
+              <div class="col-md-3 col-6">
+                <label class="form-label small text-muted fw-bold mb-1">1. 班級代碼</label>
+                <input type="text" class="form-control bg-light" id="tveClassCode" value="${studentClassVal}" readonly>
+              </div>
+              <div class="col-md-3 col-6">
+                <label class="form-label small text-muted fw-bold mb-1">2. 報名序號 (座號3碼)</label>
+                <input type="text" class="form-control bg-light" id="tveSeqNo" value="${seatNo3Val}" readonly>
+              </div>
+              <div class="col-md-3 col-6">
+                <label class="form-label small text-muted fw-bold mb-1">13. 畢業狀況 (預設 1)</label>
+                <input type="text" class="form-control bg-light" id="tveGradStatus" value="${gradStatusVal}" readonly>
+              </div>
+              <div class="col-md-3 col-6">
+                <label class="form-label small text-muted fw-bold mb-1">14. 畢業年月 (預設 11506)</label>
+                <input type="text" class="form-control bg-light" id="tveGradYm" value="${gradYmVal}" readonly>
+              </div>
+              <div class="col-md-3 col-6">
+                <label class="form-label small text-muted fw-bold mb-1">15. 畢業學校代碼 (預設 726)</label>
+                <input type="text" class="form-control bg-light" id="tveSchoolCode" value="${schoolCodeVal}" readonly>
+              </div>
+              <div class="col-md-3 col-6">
+                <label class="form-label small text-muted fw-bold mb-1">16. 學校類別 (預設 1)</label>
+                <input type="text" class="form-control bg-light" id="tveSchoolCategory" value="${schoolCatVal}" readonly>
+              </div>
+              <div class="col-md-3 col-6">
+                <label class="form-label small text-muted fw-bold mb-1">17. 學校屬性 (預設 1)</label>
+                <input type="text" class="form-control bg-light" id="tveSchoolAttribute" value="${schoolAttrVal}" readonly>
+              </div>
+              <div class="col-md-3 col-6">
+                <label class="form-label small text-muted fw-bold mb-1">18. 畢業科系代碼</label>
+                <input type="text" class="form-control bg-light fw-bold text-primary" id="tveDeptCode" value="${deptCodeVal}" readonly>
+              </div>
+            </div>
+
+            <!-- 【區塊二：考生報考意願與考區設定（依範例檔 21~23, 25 欄順序）】 -->
+            <h6 class="text-primary fw-bold border-bottom pb-2 mb-3">二、報考意願與考區設定</h6>
+            <div class="row g-3 mb-4">
+              <div class="col-md-3">
+                <label class="form-label fw-bold mb-1">21. 是否報考統測 <span class="text-danger">*</span></label>
+                <select class="form-select" id="tveIsApply" required onchange="toggleTveOptions(this.value)">
+                  <option value="Y" selected>Y - 報考</option>
+                  <option value="N">N - 不報考</option>
+                </select>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label fw-bold mb-1">22. 報考考區代碼 <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="tveExamArea" placeholder="例如：71" value="71" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-bold mb-1">23. 報考類別(群組) <span class="text-danger">*</span></label>
+                <select class="form-select" id="tveCluster" required onchange="validateTveSelection()">
+                  <option value="">-- 請選擇報考群類 --</option>
+                  <optgroup label="單群類 (代碼 01~20)">
+                    <option value="01">01 機械群</option>
+                    <option value="02">02 動力機械群</option>
+                    <option value="03">03 電機與電子群電機類</option>
+                    <option value="04">04 電機與電子群資電類</option>
+                    <option value="05">05 化工群</option>
+                    <option value="06">06 土木與建築群</option>
+                    <option value="07">07 設計群</option>
+                    <option value="09">09 家政群幼保類</option>
+                    <option value="10">10 家政群生活應用類</option>
+                    <option value="11">11 農業群</option>
+                    <option value="12">12 食品群</option>
+                    <option value="13">13 水產群</option>
+                    <option value="14">14 水產養殖群</option>
+                    <option value="15">15 航海群</option>
+                    <option value="16">16 商管群</option>
+                    <option value="17">17 外語群英語類</option>
+                    <option value="18">18 外語群日語類</option>
+                    <option value="19">19 餐旅群</option>
+                    <option value="20">20 藝術群影視類</option>
+                  </optgroup>
+                  <optgroup label="跨群類 (代碼 51~56)">
+                    <option value="51">51 電機與電子群</option>
+                    <option value="52">52 家政群</option>
+                    <option value="53">53 商管外語群(一)</option>
+                    <option value="54">54 商管外語群(二)</option>
+                    <option value="55">55 商管外語群(三)</option>
+                    <option value="56">56 水產航海群</option>
+                  </optgroup>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-bold mb-1">25. 冷氣試場安排 <span class="text-danger">*</span></label>
+                <select class="form-select" id="tveAirCon" required>
+                  <option value="Y" selected>Y - 開放冷氣試場</option>
+                  <option value="N">N - 非冷氣試場</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-bold mb-1">統測數學考卷類別 <span class="text-danger">*</span></label>
+                <select class="form-select" id="tveMath" required>
+                  <option value="數學(B)" selected>數學(B)</option>
+                  <option value="數學(A)">數學(A)</option>
+                  <option value="數學(C)">數學(C)</option>
+                  <option value="數學(S)">數學(S)</option>
+                  <option value="不考數學">不考數學</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- 【區塊三：考生身份與應考服務（依範例檔 19, 20, 26 欄順序）】 -->
+            <h6 class="text-primary fw-bold border-bottom pb-2 mb-3">三、身分與應考服務調查</h6>
+            <div class="row g-3 mb-4">
+              <div class="col-md-4">
+                <label class="form-label fw-bold mb-1">19. 身心障礙/重大傷病服務</label>
+                <select class="form-select" id="tveDisabilityService">
+                  <option value="N" selected>N - 無特殊需求</option>
+                  <option value="Y">Y - 申請應考服務</option>
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-bold mb-1">20. 低、中低收入戶減免</label>
+                <select class="form-select" id="tveIncomeStatus">
+                  <option value="" selected>一般生 (全額)</option>
+                  <option value="低收入戶">低收入戶 (全免)</option>
+                  <option value="中低收入戶">中低收入戶 (減免60%)</option>
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-bold mb-1">26. 懷孕應考服務</label>
+                <select class="form-select" id="tvePregnancyService">
+                  <option value="N" selected>N - 無特殊需求</option>
+                  <option value="Y">Y - 申請懷孕服務</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- 【區塊四：116 自主選考科目（依範例檔 27~31 欄順序）】 -->
+            <h6 class="text-primary fw-bold border-bottom pb-2 mb-3">四、116 自主選考科目設定 (範例檔 27~31 欄)</h6>
+            <div class="alert alert-info py-2 small mb-3" id="tveRuleHint">
+              📌 <b>選考規則提示</b>：單群類至少選考 2 科（且專業科目至少 1 科）；跨群類至少選考 3 科（且專業科目二為必考）。
+            </div>
+            <div class="row g-2">
+              <div class="col-6 col-md">
+                <div class="form-check form-switch">
+                  <input class="form-check-input tve-sub-check" type="checkbox" id="tve_Chinese" checked onchange="validateTveSelection()">
+                  <label class="form-check-label fw-bold" for="tve_Chinese">27. 國文</label>
+                </div>
+              </div>
+              <div class="col-6 col-md">
+                <div class="form-check form-switch">
+                  <input class="form-check-input tve-sub-check" type="checkbox" id="tve_English" checked onchange="validateTveSelection()">
+                  <label class="form-check-label fw-bold" for="tve_English">28. 英文</label>
+                </div>
+              </div>
+              <div class="col-6 col-md">
+                <div class="form-check form-switch">
+                  <input class="form-check-input tve-sub-check" type="checkbox" id="tve_Math" checked onchange="validateTveSelection()">
+                  <label class="form-check-label fw-bold" for="tve_Math">29. 數學</label>
+                </div>
+              </div>
+              <div class="col-6 col-md">
+                <div class="form-check form-switch">
+                  <input class="form-check-input tve-sub-check" type="checkbox" id="tve_Prof1" checked onchange="validateTveSelection()">
+                  <label class="form-check-label fw-bold" for="tve_Prof1">30. 專一</label>
+                </div>
+              </div>
+              <div class="col-6 col-md">
+                <div class="form-check form-switch">
+                  <input class="form-check-input tve-sub-check" type="checkbox" id="tve_Prof2" checked onchange="validateTveSelection()">
+                  <label class="form-check-label fw-bold" for="tve_Prof2">31. 專二</label>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
       `;
@@ -595,9 +827,24 @@
           try { rawDetails = JSON.parse(rawDetails); } catch(e) {}
         }
         let combinedData = Object.assign({}, savedDetails, rawDetails);
-        if (document.getElementById('tveCluster')) document.getElementById('tveCluster').value = getPropValue(combinedData, 'tveCluster', '統測群類', '報考群類', '群類', '類別');
-        if (document.getElementById('tveMath')) document.getElementById('tveMath').value = getPropValue(combinedData, 'tveMath', '統測數學', '數學類別', '統測數學考卷類別', '數學');
+
+        if (document.getElementById('tveIsApply')) document.getElementById('tveIsApply').value = getPropValue(combinedData, 'tveIsApply', '是否報考', '是否報考統測') || 'Y';
+        if (document.getElementById('tveExamArea')) document.getElementById('tveExamArea').value = getPropValue(combinedData, 'tveExamArea', '報考考區代碼', '考區') || '71';
+        if (document.getElementById('tveCluster')) document.getElementById('tveCluster').value = getPropValue(combinedData, 'tveCluster', '報考群類', '群類', '類別');
+        if (document.getElementById('tveAirCon')) document.getElementById('tveAirCon').value = getPropValue(combinedData, 'tveAirCon', '冷氣試場') || 'Y';
+        if (document.getElementById('tveMath')) document.getElementById('tveMath').value = getPropValue(combinedData, 'tveMath', '統測數學', '數學類別', '數學考卷類別') || '數學(B)';
+        if (document.getElementById('tveDisabilityService')) document.getElementById('tveDisabilityService').value = getPropValue(combinedData, 'tveDisabilityService', '身心障礙及重大傷病應考服務', '身心障礙服務') || 'N';
+        if (document.getElementById('tveIncomeStatus')) document.getElementById('tveIncomeStatus').value = getPropValue(combinedData, 'tveIncomeStatus', '低、中低收入戶', '低中低收入戶') || '';
+        if (document.getElementById('tvePregnancyService')) document.getElementById('tvePregnancyService').value = getPropValue(combinedData, 'tvePregnancyService', '懷孕應考服務', '懷孕服務') || 'N';
+
+        if (document.getElementById('tve_Chinese')) document.getElementById('tve_Chinese').checked = checkSubjectStatus(combinedData, ['tve_Chinese', 'tveChinese', '國文選考', '國文']);
+        if (document.getElementById('tve_English')) document.getElementById('tve_English').checked = checkSubjectStatus(combinedData, ['tve_English', 'tveEnglish', '英文選考', '英文']);
+        if (document.getElementById('tve_Math')) document.getElementById('tve_Math').checked = checkSubjectStatus(combinedData, ['tve_Math', 'tveMathSub', '數學選考', '數學']);
+        if (document.getElementById('tve_Prof1')) document.getElementById('tve_Prof1').checked = checkSubjectStatus(combinedData, ['tve_Prof1', 'tveProf1', '專一選考', '專一', '專業科目一', '專業科目(一)']);
+        if (document.getElementById('tve_Prof2')) document.getElementById('tve_Prof2').checked = checkSubjectStatus(combinedData, ['tve_Prof2', 'tveProf2', '專二選考', '專二', '專業科目二', '專業科目(二)']);
       }
+
+      validateTveSelection();
     } 
     else {
       container.innerHTML = `
@@ -716,13 +963,55 @@
     const photoFile = document.getElementById('photoFile').files[0];
     const dynamicExamSection = document.getElementById('dynamicExamSection');
 
-    // 只有在「二、考試科目與管道細項」有顯示時才驗證科目勾選
+    // 學測選考檢核
     if (dynamicExamSection.style.display !== 'none' && /學測|學科能力測驗|GSAT/i.test(examType)) {
       const hasChecked = ['gsat_Chinese', 'gsat_English', 'gsat_MathA', 'gsat_MathB', 'gsat_Science', 'gsat_Society']
         .some(id => document.getElementById(id) && document.getElementById(id).checked);
       if (!hasChecked) {
         alert("請至少勾選一門學測選考科目！");
         return;
+      }
+    }
+
+    // 116 統測選考防呆檢核
+    if (dynamicExamSection.style.display !== 'none' && /統測|統一入學測驗|TVE/i.test(examType)) {
+      const isApply = document.getElementById('tveIsApply') ? document.getElementById('tveIsApply').value : 'Y';
+      if (isApply === 'Y') {
+        const cluster = document.getElementById('tveCluster') ? document.getElementById('tveCluster').value.trim() : '';
+        if (!cluster) {
+          alert("請選擇統測報考群類！");
+          return;
+        }
+
+        const isCross = /^5[1-6]/.test(cluster);
+        const c_zh = document.getElementById('tve_Chinese') && document.getElementById('tve_Chinese').checked;
+        const c_en = document.getElementById('tve_English') && document.getElementById('tve_English').checked;
+        const c_ma = document.getElementById('tve_Math') && document.getElementById('tve_Math').checked;
+        const c_p1 = document.getElementById('tve_Prof1') && document.getElementById('tve_Prof1').checked;
+        const c_p2 = document.getElementById('tve_Prof2') && document.getElementById('tve_Prof2').checked;
+
+        const totalSelected = [c_zh, c_en, c_ma, c_p1, c_p2].filter(Boolean).length;
+        const profSelected = [c_p1, c_p2].filter(Boolean).length;
+
+        if (isCross) {
+          if (totalSelected < 3) {
+            alert("跨群類考生 (51~56) 至少需選考 3 科！");
+            return;
+          }
+          if (!c_p2) {
+            alert("跨群類考生 (51~56) 專業科目(二) 為必考科目！");
+            return;
+          }
+        } else {
+          if (totalSelected < 2) {
+            alert("單群類考生 (01~20) 至少需選考 2 科！");
+            return;
+          }
+          if (profSelected < 1) {
+            alert("單群類考生 (01~20) 至少需包含 1 科專業科目 (專一或專二)！");
+            return;
+          }
+        }
       }
     }
 
@@ -750,8 +1039,32 @@
         gsat_MathB: gsat_MathB,
         gsat_Science: gsat_Science,
         gsat_Society: gsat_Society,
+
+        // 統測 116 集體報名與自主選考規格
+        tveClassCode: document.getElementById('tveClassCode') ? document.getElementById('tveClassCode').value : (currentStudentData ? currentStudentData.studentClass : ''),
+        tveSeqNo: document.getElementById('tveSeqNo') ? document.getElementById('tveSeqNo').value : (currentStudentData ? formatSeatNo3(currentStudentData.seatNo) : ''),
+        tveGradStatus: document.getElementById('tveGradStatus') ? document.getElementById('tveGradStatus').value : '1',
+        tveGradYm: document.getElementById('tveGradYm') ? document.getElementById('tveGradYm').value : '11506',
+        tveSchoolCode: document.getElementById('tveSchoolCode') ? document.getElementById('tveSchoolCode').value : '726',
+        tveSchoolCategory: document.getElementById('tveSchoolCategory') ? document.getElementById('tveSchoolCategory').value : '1',
+        tveSchoolAttribute: document.getElementById('tveSchoolAttribute') ? document.getElementById('tveSchoolAttribute').value : '1',
+        tveDeptCode: document.getElementById('tveDeptCode') ? document.getElementById('tveDeptCode').value : (currentStudentData ? getTveDeptCode(currentStudentData.studentClass) : ''),
+        
+        tveIsApply: document.getElementById('tveIsApply') ? document.getElementById('tveIsApply').value : 'Y',
+        tveExamArea: document.getElementById('tveExamArea') ? document.getElementById('tveExamArea').value.trim() : '71',
         tveCluster: document.getElementById('tveCluster') ? document.getElementById('tveCluster').value.trim() : '',
+        tveAirCon: document.getElementById('tveAirCon') ? document.getElementById('tveAirCon').value : 'Y',
         tveMath: document.getElementById('tveMath') ? document.getElementById('tveMath').value.trim() : '',
+        tveDisabilityService: document.getElementById('tveDisabilityService') ? document.getElementById('tveDisabilityService').value : 'N',
+        tveIncomeStatus: document.getElementById('tveIncomeStatus') ? document.getElementById('tveIncomeStatus').value : '',
+        tvePregnancyService: document.getElementById('tvePregnancyService') ? document.getElementById('tvePregnancyService').value : 'N',
+
+        tve_Chinese: document.getElementById('tve_Chinese') && document.getElementById('tve_Chinese').checked ? 1 : 0,
+        tve_English: document.getElementById('tve_English') && document.getElementById('tve_English').checked ? 1 : 0,
+        tve_Math: document.getElementById('tve_Math') && document.getElementById('tve_Math').checked ? 1 : 0,
+        tve_Prof1: document.getElementById('tve_Prof1') && document.getElementById('tve_Prof1').checked ? 1 : 0,
+        tve_Prof2: document.getElementById('tve_Prof2') && document.getElementById('tve_Prof2').checked ? 1 : 0,
+
         customNote: document.getElementById('customNote') ? document.getElementById('customNote').value.trim() : '',
 
         studentClass: document.getElementsByName('studentClass')[0].value.trim(),
