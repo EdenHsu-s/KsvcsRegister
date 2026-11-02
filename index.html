@@ -718,8 +718,37 @@
                 </select>
               </div>
               <div class="col-md-3">
-                <label class="form-label fw-bold mb-1">22. 報考考區代碼 <span class="text-danger">*</span></label>
-                <input type="text" class="form-control" id="tveExamArea" placeholder="例如：71" value="71" required>
+                <label class="form-label fw-bold mb-1">22. 報考考區 <span class="text-danger">*</span></label>
+                <select class="form-select" id="tveExamArea" required>
+                  <option value="51">51 基隆考區</option>
+                  <option value="52">52 臺北考區</option>
+                  <option value="53">53 中和永和考區</option>
+                  <option value="54">54 板橋土城考區</option>
+                  <option value="55">55 三重考區</option>
+                  <option value="56">56 桃園八德考區</option>
+                  <option value="57">57 中壢考區</option>
+                  <option value="58">58 新竹市考區</option>
+                  <option value="59">59 竹北新豐考區</option>
+                  <option value="60">60 苗栗考區</option>
+                  <option value="61">61 臺中考區</option>
+                  <option value="62">62 大甲考區</option>
+                  <option value="63">63 南投考區</option>
+                  <option value="64">64 彰化考區</option>
+                  <option value="65">65 員林永靖考區</option>
+                  <option value="66">66 雲林考區</option>
+                  <option value="67">67 嘉義考區</option>
+                  <option value="68">68 臺南考區</option>
+                  <option value="69">69 新營考區</option>
+                  <option value="70">70 高雄考區</option>
+                  <option value="71" selected>71 鳳山鳥松考區</option>
+                  <option value="72">72 屏東考區</option>
+                  <option value="73">73 宜蘭考區</option>
+                  <option value="74">74 花蓮考區</option>
+                  <option value="75">75 臺東考區</option>
+                  <option value="76">76 澎湖考區</option>
+                  <option value="77">77 金門考區</option>
+                  <option value="78">78 馬祖考區</option>
+                </select>
               </div>
               <div class="col-md-6">
                 <label class="form-label fw-bold mb-1">23. 報考類別(群組) <span class="text-danger">*</span></label>
@@ -850,7 +879,14 @@
         let combinedData = Object.assign({}, savedDetails, rawDetails);
 
         if (document.getElementById('tveIsApply')) document.getElementById('tveIsApply').value = getPropValue(combinedData, 'tveIsApply', '是否報考', '是否報考統測') || 'Y';
-        if (document.getElementById('tveExamArea')) document.getElementById('tveExamArea').value = getPropValue(combinedData, 'tveExamArea', '報考考區代碼', '考區') || '71';
+        
+        // 抓取考區 2 碼數字代碼防呆帶入
+        if (document.getElementById('tveExamArea')) {
+          let areaRaw = String(getPropValue(combinedData, 'tveExamArea', '報考考區代碼', '考區') || '71').trim();
+          let areaMatch = areaRaw.match(/\d{2}/);
+          document.getElementById('tveExamArea').value = areaMatch ? areaMatch[0] : (areaRaw || '71');
+        }
+
         if (document.getElementById('tveCluster')) document.getElementById('tveCluster').value = getPropValue(combinedData, 'tveCluster', '報考群類', '群類', '類別');
         if (document.getElementById('tveAirCon')) document.getElementById('tveAirCon').value = getPropValue(combinedData, 'tveAirCon', '冷氣試場') || 'Y';
         if (document.getElementById('tveMath')) document.getElementById('tveMath').value = getPropValue(combinedData, 'tveMath', '統測數學', '數學類別', '數學考卷類別') || '數學(B)';
@@ -1113,12 +1149,10 @@
       const result = await response.json();
 
       if (result.status === "success") {
-        // 觸發「報名完成」彈出視窗
         document.getElementById('successModalText').innerText = result.message || '您的報名資料已成功送出與儲存！';
         const successModal = new bootstrap.Modal(document.getElementById('successModal'));
         successModal.show();
 
-        // 同時保留頂部提示
         statusMessage.innerHTML = `<div class="alert alert-success text-center fs-5 shadow-sm">🎉 ${result.message || '報名資料上傳成功！'}</div>`;
         window.scrollTo({ top: 0, behavior: 'smooth' });
       } else {
