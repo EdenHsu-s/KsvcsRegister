@@ -232,8 +232,8 @@
 
         <!-- 聯絡電話與緊急聯絡人 (四欄並排) -->
         <div class="col-md-3">
-          <label class="form-label fw-bold"><span class="field-num">10</span>考生聯絡電話</label>
-          <input type="tel" class="form-control" name="studentTel" placeholder="例如：07-1234567">
+          <label class="form-label fw-bold"><span class="field-num">10</span>考生聯絡電話 <span class="text-danger">*</span></label>
+          <input type="tel" class="form-control" name="studentTel" required placeholder="例如：07-1234567">
         </div>
 
         <div class="col-md-3">
@@ -305,6 +305,36 @@
 <!-- Google Apps Script 後端網址與邏輯處理 -->
 <script>
   const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycby0CNwZEKY7GIPm58gX_VLeMbTFThsgdNtCYQmdH2q1j-FRd4dL59lGTfA_i1CFVhWR3Q/exec"; 
+
+  // 根據簡章規定的群類與數學考科對應字典
+  const clusterMathMap = {
+    "01": "數學(C)", // 機械群
+    "02": "數學(C)", // 動力機械群
+    "03": "數學(C)", // 電機與電子群電機類
+    "04": "數學(C)", // 電機與電子群資電類
+    "05": "數學(C)", // 化工群
+    "06": "數學(C)", // 土木與建築群
+    "07": "數學(B)", // 設計群
+    "08": "數學(C)", // 工程與管理類
+    "09": "數學(B)", // 商業與管理群
+    "10": "數學(A)", // 衛生與護理類
+    "11": "數學(B)", // 食品群
+    "12": "數學(A)", // 家政群幼保類
+    "13": "數學(A)", // 家政群生活應用類
+    "14": "數學(B)", // 農業群
+    "15": "數學(B)", // 外語群英語類
+    "16": "數學(B)", // 外語群日語類
+    "17": "數學(B)", // 餐旅群
+    "18": "數學(B)", // 海事群
+    "19": "數學(B)", // 水產群
+    "20": "數學(A)", // 藝術群影視類
+    "51": "數學(C)", // 電機與電子群 (跨群)
+    "52": "數學(A)", // 家政群 (跨群)
+    "53": "數學(B)", // 商管外語群(一) (跨群)
+    "54": "數學(B)", // 商管外語群(二) (跨群)
+    "55": "數學(B)", // 商管外語群(三) (跨群)
+    "56": "數學(B)"  // 商管外語群(四) (跨群)
+  };
 
   let currentStudentData = null;
   let existingRegistrationData = null;
@@ -585,6 +615,14 @@
     const clusterVal = document.getElementById('tveCluster') ? document.getElementById('tveCluster').value : '';
     const isCrossCluster = /^5[1-6]/.test(clusterVal);
 
+    // 依選擇的群類自動帶入對應的統測數學考卷類別
+    if (clusterVal && clusterMathMap[clusterVal]) {
+      const mathSelect = document.getElementById('tveMath');
+      if (mathSelect) {
+        mathSelect.value = clusterMathMap[clusterVal];
+      }
+    }
+
     const prof2Check = document.getElementById('tve_Prof2');
     if (prof2Check) {
       if (isCrossCluster) {
@@ -601,7 +639,14 @@
     const fields = ['tveExamArea', 'tveCluster', 'tveAirCon', 'tveMath', 'tveDisabilityService', 'tveIncomeStatus', 'tvePregnancyService'];
     fields.forEach(id => {
       const el = document.getElementById(id);
-      if (el) el.disabled = !isApply;
+      if (el) {
+        el.disabled = !isApply;
+        if (!isApply) {
+          el.removeAttribute('required');
+        } else {
+          el.setAttribute('required', 'required');
+        }
+      }
     });
     
     document.querySelectorAll('.tve-sub-check').forEach(chk => {
@@ -762,17 +807,18 @@
                     <option value="05">05 化工群</option>
                     <option value="06">06 土木與建築群</option>
                     <option value="07">07 設計群</option>
-                    <option value="09">09 家政群幼保類</option>
-                    <option value="10">10 家政群生活應用類</option>
-                    <option value="11">11 農業群</option>
-                    <option value="12">12 食品群</option>
-                    <option value="13">13 水產群</option>
-                    <option value="14">14 水產養殖群</option>
-                    <option value="15">15 航海群</option>
-                    <option value="16">16 商管群</option>
-                    <option value="17">17 外語群英語類</option>
-                    <option value="18">18 外語群日語類</option>
-                    <option value="19">19 餐旅群</option>
+                    <option value="08">08 工程與管理類</option>
+                    <option value="09">09 商業與管理群</option>
+                    <option value="10">10 衛生與護理類</option>
+                    <option value="11">11 食品群</option>
+                    <option value="12">12 家政群幼保類</option>
+                    <option value="13">13 家政群生活應用類</option>
+                    <option value="14">14 農業群</option>
+                    <option value="15">15 外語群英語類</option>
+                    <option value="16">16 外語群日語類</option>
+                    <option value="17">17 餐旅群</option>
+                    <option value="18">18 海事群</option>
+                    <option value="19">19 水產群</option>
                     <option value="20">20 藝術群影視類</option>
                   </optgroup>
                   <optgroup label="跨群類 (代碼 51~56)">
@@ -781,7 +827,7 @@
                     <option value="53">53 商管外語群(一)</option>
                     <option value="54">54 商管外語群(二)</option>
                     <option value="55">55 商管外語群(三)</option>
-                    <option value="56">56 水產航海群</option>
+                    <option value="56">56 商管外語群(四)</option>
                   </optgroup>
                 </select>
               </div>
@@ -794,11 +840,10 @@
               </div>
               <div class="col-md-6">
                 <label class="form-label fw-bold mb-1">統測數學考卷類別 <span class="text-danger">*</span></label>
-                <select class="form-select" id="tveMath" required>
+                <select class="form-select fw-bold text-primary" id="tveMath" required>
                   <option value="數學(B)" selected>數學(B)</option>
                   <option value="數學(A)">數學(A)</option>
                   <option value="數學(C)">數學(C)</option>
-                  <option value="數學(S)">數學(S)</option>
                   <option value="不考數學">不考數學</option>
                 </select>
               </div>
@@ -807,23 +852,24 @@
             <h6 class="text-primary fw-bold border-bottom pb-2 mb-3">三、身分與應考服務調查</h6>
             <div class="row g-3 mb-4">
               <div class="col-md-4">
-                <label class="form-label fw-bold mb-1">19. 身心障礙/重大傷病服務</label>
-                <select class="form-select" id="tveDisabilityService">
+                <label class="form-label fw-bold mb-1">19. 身心障礙/重大傷病服務 <span class="text-danger">*</span></label>
+                <select class="form-select" id="tveDisabilityService" required>
                   <option value="N" selected>N - 無特殊需求</option>
                   <option value="Y">Y - 申請應考服務</option>
                 </select>
               </div>
               <div class="col-md-4">
-                <label class="form-label fw-bold mb-1">20. 低、中低收入戶減免</label>
-                <select class="form-select" id="tveIncomeStatus">
-                  <option value="" selected>一般生 (全額)</option>
+                <label class="form-label fw-bold mb-1">20. 低、中低收入戶減免 <span class="text-danger">*</span></label>
+                <select class="form-select" id="tveIncomeStatus" required>
+                  <option value="">-- 請選擇身分 --</option>
+                  <option value="一般生">一般生 (全額)</option>
                   <option value="低收入戶">低收入戶 (全免)</option>
                   <option value="中低收入戶">中低收入戶 (減免60%)</option>
                 </select>
               </div>
               <div class="col-md-4">
-                <label class="form-label fw-bold mb-1">26. 懷孕應考服務</label>
-                <select class="form-select" id="tvePregnancyService">
+                <label class="form-label fw-bold mb-1">26. 懷孕應考服務 <span class="text-danger">*</span></label>
+                <select class="form-select" id="tvePregnancyService" required>
                   <option value="N" selected>N - 無特殊需求</option>
                   <option value="Y">Y - 申請懷孕服務</option>
                 </select>
@@ -880,7 +926,6 @@
 
         if (document.getElementById('tveIsApply')) document.getElementById('tveIsApply').value = getPropValue(combinedData, 'tveIsApply', '是否報考', '是否報考統測') || 'Y';
         
-        // 抓取考區 2 碼數字代碼防呆帶入
         if (document.getElementById('tveExamArea')) {
           let areaRaw = String(getPropValue(combinedData, 'tveExamArea', '報考考區代碼', '考區') || '71').trim();
           let areaMatch = areaRaw.match(/\d{2}/);
