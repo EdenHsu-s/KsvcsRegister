@@ -927,9 +927,9 @@
         if (document.getElementById('tveIsApply')) document.getElementById('tveIsApply').value = getPropValue(combinedData, 'tveIsApply', '是否報考', '是否報考統測') || 'Y';
         
         if (document.getElementById('tveExamArea')) {
-          let areaRaw = String(getPropValue(combinedData, 'tveExamArea', '報考考區代碼', '考區') || '71').trim();
+          let areaRaw = String(getPropValue(combinedData, 'tveExamArea', '報考考區代碼', '考區') || '70').trim();
           let areaMatch = areaRaw.match(/\d{2}/);
-          document.getElementById('tveExamArea').value = areaMatch ? areaMatch[0] : (areaRaw || '71');
+          document.getElementById('tveExamArea').value = areaMatch ? areaMatch[0] : (areaRaw || '70');
         }
 
         if (document.getElementById('tveCluster')) document.getElementById('tveCluster').value = getPropValue(combinedData, 'tveCluster', '報考群類', '群類', '類別');
@@ -1150,7 +1150,7 @@
         tveDeptCode: document.getElementById('tveDeptCode') ? document.getElementById('tveDeptCode').value : (currentStudentData ? getTveDeptCode(currentStudentData.studentClass) : ''),
         
         tveIsApply: document.getElementById('tveIsApply') ? document.getElementById('tveIsApply').value : 'Y',
-        tveExamArea: document.getElementById('tveExamArea') ? document.getElementById('tveExamArea').value.trim() : '71',
+        tveExamArea: document.getElementById('tveExamArea') ? document.getElementById('tveExamArea').value.trim() : '70',
         tveCluster: document.getElementById('tveCluster') ? document.getElementById('tveCluster').value.trim() : '',
         tveAirCon: document.getElementById('tveAirCon') ? document.getElementById('tveAirCon').value : 'Y',
         tveMath: document.getElementById('tveMath') ? document.getElementById('tveMath').value.trim() : '',
